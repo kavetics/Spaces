@@ -66,6 +66,16 @@ export async function askMuse({ scope, spaces, messages }) {
   }
 }
 
+// Which new items, after photos are added to a Space, may already be in its inventory.
+export async function findRepeats(space, existing, added) {
+  return json(await fetch('/api/repeats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ space, existing, added }),
+    signal: AbortSignal.timeout(90000),
+  }));
+}
+
 // Details for an item someone is selling, read from the extra photos they took of it.
 export async function describeForSale(photos, item) {
   const body = new FormData();

@@ -10,6 +10,7 @@ import './Inventory.css'
 function status(space, failed) {
   if (failed) return "Couldn't finish. Tap to try again."
   if (!space.result) return 'Finding items…'
+  if (space.addFrames) return 'Adding photos…'
   return `${countLabel(sortItems(space).inSpace.length)} · Scanned ${scannedDay(space.savedAt)}`
 }
 

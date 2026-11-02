@@ -58,6 +58,7 @@ async function storable(space) {
   return {
     ...space,
     frames: await Promise.all(space.frames.map(toStored)),
+    ...(space.addFrames && { addFrames: await Promise.all(space.addFrames.map(toStored)) }),
     ...(items && { result: { ...space.result, items: await Promise.all(items.map(async i => (i.salePhotos ? { ...i, salePhotos: await Promise.all(i.salePhotos.map(toStored)) } : i))) } }),
   }
 }
@@ -67,6 +68,7 @@ function usable(space) {
   return {
     ...space,
     frames: space.frames.map(fromStored),
+    ...(space.addFrames && { addFrames: space.addFrames.map(fromStored) }),
     ...(items && { result: { ...space.result, items: items.map(i => (i.salePhotos ? { ...i, salePhotos: i.salePhotos.map(fromStored) } : i)) } }),
   }
 }

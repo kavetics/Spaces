@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
-import { buildInventory, shrinkPhoto } from './api.js'
+import { buildInventory, findRepeats, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
 import Declutter, { declutterLeft } from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
@@ -9,7 +9,7 @@ import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { makePictures, needsPictures } from './crop.js'
-import { categoryOf } from './spaceItems.js'
+import { categoryOf, sortItems } from './spaceItems.js'
 import { askMotionPermission } from './sweep.js'
 import Welcome from './Welcome.jsx'
 
@@ -35,7 +35,7 @@ export default function App() {
 
   const open = spaces.find(s => s.id === openId)
   const openItem = open?.result?.items.find(i => i.id === openItemId)
-  const processing = spaces.some(s => !s.result && !failed[s.id])
+  const processing = spaces.some(s => (!s.result || s.addFrames) && !failed[s.id])
 
   useEffect(() => {
     let cancelled = false
@@ -57,17 +57,66 @@ export default function App() {
   }
 
   // Runs here and not on the Space's screen, so it continues while someone looks at other Spaces.
-  // This also restarts a run the phone interrupted by going to sleep.
+  // This also restarts a run the phone interrupted by going to sleep. Photos added to a finished
+  // Space are recognized on their own, then merged in.
   useEffect(() => {
-    const next = spaces.find(s => !s.result && !failed[s.id])
+    const next = spaces.find(s => (!s.result || s.addFrames) && !failed[s.id])
     if (!next || running.current) return
     running.current = next.id
     setProgress(null)
-    buildInventory(next.frames, next.spaceName, setProgress)
+    const work = next.result ? addToSpace(next) : buildInventory(next.frames, next.spaceName, setProgress)
       .then(result => change(next.id, s => ({ ...s, result })))
+    work
       .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
       .finally(() => { running.current = null })
   }, [spaces, failed])
+
+  /**
+   * Recognizes added photos, makes the new items' pictures, and asks which may already be listed.
+   * New items keep their own ids and point at their own photos, after the Space's existing ones.
+   */
+  async function addToSpace(space) {
+    const added = await buildInventory(space.addFrames, space.spaceName, setProgress)
+    const firstPhoto = space.frames.length
+    const firstId = Math.max(-1, ...space.result.items.map(i => i.id)) + 1
+    const items = added.items.map(i => ({
+      ...i,
+      id: i.id + firstId,
+      photos: (i.photos ?? []).map(p => p + firstPhoto),
+      view: i.view && { ...i.view, photo: i.view.photo + firstPhoto },
+      addedAt: new Date().toISOString(),
+    }))
+    const frames = [...space.frames, ...space.addFrames]
+    const { pictures } = await makePictures({ frames, result: { items } })
+    const withPictures = items.map(i => ({ ...i, picture: pictures[i.id] ?? '' }))
+    const { inSpace, nearby } = sortItems(space)
+    const describe = (prefix, i) => ({ ref: `${prefix}${i.id}`, name: i.name, description: i.description, category: i.category, picture: i.picture || '' })
+    // If the check fails, the new items are simply added: a possible repeat is better than a lost item.
+    const { repeats } = await findRepeats(space.spaceName, [...inSpace, ...nearby].map(i => describe('e', i)), withPictures.map(i => describe('n', i)))
+      .catch(() => ({ repeats: {} }))
+    change(space.id, s => {
+      if (s.savedAt !== space.savedAt) return s
+      const { addFrames: _, ...rest } = s
+      return {
+        ...rest,
+        frames,
+        result: {
+          ...s.result,
+          items: [...s.result.items, ...withPictures.map(i => {
+            const same = repeats[`n${i.id}`]
+            return same ? { ...i, possibleRepeatOf: Number(same.slice(1)) } : i
+          })],
+        },
+      }
+    })
+  }
+
+  // Photos for a part of the Space the first scan couldn't see, waiting to be recognized.
+  function addPhotos(id, frames) {
+    if (!frames.length) return
+    setFailed(({ [id]: _, ...rest }) => rest)
+    change(id, s => ({ ...s, addFrames: [...(s.addFrames ?? []), ...frames] }))
+  }
 
   useEffect(() => {
     if (screen === 'spaces') declutterLeft().then(setLeftToDeclutter)
@@ -123,6 +172,12 @@ export default function App() {
 
   // Save before recognition starts, so a phone going to sleep can't lose the photos.
   function onScan({ frames }) {
+    if (pending.adding) {
+      addPhotos(pending.id, frames)
+      setOpenId(pending.id)
+      setScreen('space')
+      return
+    }
     const previous = spaces.find(s => s.id === pending.id)
     const fresh = {
       id: previous?.id ?? crypto.randomUUID(),
@@ -143,9 +198,9 @@ export default function App() {
   }
 
   // Photos can only be taken after motion access, which iPhones only grant from a tap like this one.
-  function startScan(name, id) {
+  function startScan(name, id, adding = false) {
     askMotionPermission()
-    setPending({ name, id })
+    setPending({ name, id, adding })
     setScreen('scan')
   }
 
@@ -242,6 +297,16 @@ export default function App() {
           onSectionToggle={(key, isOpen) => change(open.id, s => ({ ...s, openSections: { ...s.openSections, [key]: isOpen } }))}
           onDelete={onDelete}
           onRescan={() => startScan(open.spaceName, open.id)}
+          onScanMore={() => startScan(open.spaceName, open.id, true)}
+          onAddPhotos={frames => addPhotos(open.id, frames)}
+          onDiscardAdded={() => {
+            setFailed(({ [open.id]: _, ...rest }) => rest)
+            change(open.id, ({ addFrames: _, ...s }) => s)
+          }}
+          onConfirmRepeat={(item, same) => {
+            if (same) change(open.id, s => ({ ...s, result: { ...s.result, items: s.result.items.filter(i => i.id !== item.id) } }))
+            else updateItem(open.id, item.id, { possibleRepeatOf: null })
+          }}
           onBack={() => setScreen('spaces')}
           onAsk={() => setScreen('ask-space')}
           onOpenItem={id => { setOpenItemId(id); setScreen('item') }}

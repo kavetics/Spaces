@@ -8,6 +8,7 @@ import { askMuse } from './ask.js';
 import { connector } from './connector.js';
 import { shared } from './shared.js';
 import { describeForSale } from './itemDetails.js';
+import { findRepeats } from './repeats.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -26,6 +27,15 @@ app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {
     const { scope, spaces, messages } = req.body ?? {};
     if (!Array.isArray(spaces) || !Array.isArray(messages) || !messages.length) throw Object.assign(new Error('Send spaces and messages.'), { status: 400 });
     res.json(await askMuse({ scope, spaces, messages }));
+  } catch (err) { next(err); }
+});
+
+// After photos are added to a Space: which new items are already in its inventory.
+app.post('/api/repeats', express.json({ limit: '8mb' }), async (req, res, next) => {
+  try {
+    const { space, existing, added } = req.body ?? {};
+    if (!Array.isArray(existing) || !Array.isArray(added)) throw Object.assign(new Error('Send existing and added items.'), { status: 400 });
+    res.json(await findRepeats({ space, existing: existing.slice(0, 300), added: added.slice(0, 300) }));
   } catch (err) { next(err); }
 });
 

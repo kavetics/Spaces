@@ -5,10 +5,13 @@ export function sortItems({ result, itemChoices = {}, areaChoices = {} }) {
   // Scans saved before Spaces had names have no area on their items, so those all count as in the Space.
   const isNearby = item => item.inSpace === false
   const items = result?.items ?? []
+  // New items that may already be listed wait for the person to confirm, outside every other list.
+  const confirmed = items.filter(i => i.possibleRepeatOf == null)
   return {
     // Scans saved when items could be left out and brought back may still have 'leave' choices, which stay hidden.
-    inSpace: items.filter(i => choiceFor(i) === 'add' || (!isNearby(i) && choiceFor(i) !== 'leave')),
-    nearby: items.filter(i => isNearby(i) && !choiceFor(i)),
+    inSpace: confirmed.filter(i => choiceFor(i) === 'add' || (!isNearby(i) && choiceFor(i) !== 'leave')),
+    nearby: confirmed.filter(i => isNearby(i) && !choiceFor(i)),
+    repeats: items.filter(i => i.possibleRepeatOf != null),
   }
 }
 

@@ -320,3 +320,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** item pictures and a Space cover are made once after a scan and saved, instead of cropping full photos every time a screen opens. Photos are stored as bytes. Declutter saves its place, and Your Spaces offers to resume.
 - **Learned:** pictures failed on the phone but not on the Mac. The likely causes are memory (one full-photo decode per picture, all at once) and iPhone browsers losing Blobs saved in IndexedDB; both are now avoided. Not yet confirmed on the phone.
 - **Next:** confirm pictures on the phone; README and demo video.
+
+## 2026-11-03: Add more to a Space
+- **Done:** Add more on a Space: scan from another spot or add photos. Only the new photos are recognized; Spark compares new items with the existing ones by picture, and likely repeats wait in "Possible repeats" for the person to confirm. Decisions and sale details are kept.
+- **Decisions:** never merge silently: a confirmed repeat is removed, a "different" one is kept. If the check fails, new items are just added.
+- **Learned:** on real photos, Spark matched the same sofa from a different angle and kept a similar loveseat separate (about 10 to 16 s).
+- **Next:** test on the backyard; README and demo video.

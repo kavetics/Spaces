@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
@@ -16,6 +16,7 @@ import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
+import { shrinkPhoto } from './api.js'
 import { decisionLabel, progress as itemProgress } from './itemFields.js'
 import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
@@ -28,11 +29,13 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
+  const [askAdd, setAskAdd] = useState(false)
+  const addInput = useRef(null)
   const [askKey, setAskKey] = useState(false)
   const [typedKey, setTypedKey] = useState('')
   const [sharing, setSharing] = useState(false)
@@ -76,6 +79,20 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           }
         }}
       />
+      <Dialog isOpen={askAdd} onOpenChange={setAskAdd} width={420}>
+        <Layout
+          header={<DialogHeader title={`Add to ${spaceName}`} onOpenChange={setAskAdd} />}
+          content={
+            <LayoutContent>
+              <VStack gap={3}>
+                <Text as="p">For corners or parts of the Space you couldn't see from one spot. New items are added to this inventory, and your decisions stay as they are.</Text>
+                <Button label="Scan from another spot" variant="primary" onClick={() => { setAskAdd(false); onScanMore() }} />
+                <Button label="Add photos" onClick={() => addInput.current?.click()} />
+              </VStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
       <Dialog isOpen={askKey} onOpenChange={setAskKey} purpose="form" width={420}>
         <Layout
           header={<DialogHeader title="Enter your owner key" onOpenChange={setAskKey} />}
@@ -109,7 +126,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
     }
   }
 
-  if (error) {
+  if (error && !result) {
     return (
       <VStack gap={4} padding={4} className="inventory">
         <HStack>{backButton}</HStack>
@@ -141,7 +158,15 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
 
   const { items, warnings } = result
   const unread = warnings.failedPhotos.length
-  const { inSpace, nearby } = sortItems(space)
+  const { inSpace, nearby, repeats } = sortItems(space)
+  const adding = Boolean(space.addFrames)
+
+  async function addFromLibrary(event) {
+    const files = [...(event.target.files ?? [])]
+    event.target.value = ''
+    setAskAdd(false)
+    onAddPhotos((await Promise.all(files.map(f => shrinkPhoto(f).catch(() => null)))).filter(Boolean))
+  }
   const areas = [...new Set(nearby.map(i => i.area))]
   // Removing is immediate and real, so a mis-tap gets a few seconds to take it back.
   function remove(item) {
@@ -187,7 +212,10 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       <VStack gap={1}>
         <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={1}>{spaceName}</Heading>
-          <Button label="Rescan" size="sm" onClick={() => setAskRescan(true)} />
+          <HStack gap={1}>
+            <Button label="Add more" size="sm" isDisabled={adding} onClick={() => setAskAdd(true)} />
+            <Button label="Rescan" size="sm" isDisabled={adding} onClick={() => setAskRescan(true)} />
+          </HStack>
         </HStack>
         <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
         {SHOW_SHARING && <Switch
@@ -201,6 +229,55 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       </VStack>
       {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some items may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
+      <input ref={addInput} type="file" accept="image/*" multiple hidden onChange={addFromLibrary} />
+      {adding && !error && (
+        <HStack gap={2} vAlign="center" role="status">
+          <Spinner size="md" />
+          <Text>{progressText(progress, space.addFrames.length).replace('your photos', 'your new photos')}</Text>
+        </HStack>
+      )}
+      {adding && error && (
+        <VStack gap={2} role="alert">
+          <Banner status="error" title="Couldn't add your new photos" description={error} />
+          <HStack gap={2}>
+            <Button label="Try again" variant="primary" onClick={onRetry} />
+            <Button label="Discard them" variant="ghost" onClick={onDiscardAdded} />
+          </HStack>
+        </VStack>
+      )}
+      {repeats.length > 0 && (
+        <VStack gap={2}>
+          <Heading level={2}>Possible repeats ({repeats.length})</Heading>
+          <Text as="p" color="secondary">These items from your new photos may already be listed, seen from another angle.</Text>
+          <List hasDividers edge="flush">
+            {repeats.map(item => {
+              const same = result.items.find(i => i.id === item.possibleRepeatOf)
+              return (
+                <ListItem
+                  key={item.id}
+                  align="start"
+                  label={<Text as="p">{item.name}</Text>}
+                  description={(
+                    <VStack gap={1}>
+                      <Text as="p" type="supporting">{same ? `Same as your ${same.name}?` : item.description}</Text>
+                      <HStack gap={1}>
+                        <Button label="Same item" aria-label={`Same item: ${item.name}`} size="sm" variant="ghost" onClick={() => onConfirmRepeat(item, true)} />
+                        <Button label="Different" aria-label={`Different: ${item.name}`} size="sm" variant="ghost" onClick={() => onConfirmRepeat(item, false)} />
+                      </HStack>
+                    </VStack>
+                  )}
+                  startContent={(
+                    <HStack gap={1}>
+                      {item.picture ? <img className="inventory-crop" src={item.picture} alt="" /> : <span className="inventory-crop" />}
+                      {same?.picture && <img className="inventory-crop" src={same.picture} alt={`Your ${same.name}`} />}
+                    </HStack>
+                  )}
+                />
+              )
+            })}
+          </List>
+        </VStack>
+      )}
       {inSpace.length > 0 && <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>}
       {inSpace.length > 0 && section(INVENTORY, `Digital inventory (${inSpace.length})`, (
         <VStack gap={3}>
