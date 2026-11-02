@@ -19,8 +19,10 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 ## Backlog (in order, after the in-app camera works)
 - [ ] UI optimizations: make the scanner's text and white dot easier to see against bright rooms (hard to read in the iPhone test)
 - [x] Keep the latest scan on the phone through sleep and reloads
-- [ ] Save more than one scan, per Space, and let people correct items
+- [x] Keep many Spaces on the phone, with a Your Spaces page
+- [ ] Let people correct item names and add items by hand
 - [ ] Store scans on the server (Supabase) for sharing and voting
+- [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
 - [ ] Measure recognition on real scans against a hand-written answer key; results vary between runs
 - [x] ⑦ Referee mode: record a turn with sound (hold, or solo countdown), player x of y
 - [x] Catch judge: SAM follows the ball, Muse Spark rules caught, dropped or unclear

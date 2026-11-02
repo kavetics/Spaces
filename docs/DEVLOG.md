@@ -272,3 +272,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** 8 categories with one-line rules; results grouped with counts, "Not sure" last in each. Older saved scans still sort correctly.
 - **Learned:** a shorter list with rules stopped items like dumbbells changing category between runs. Item counts still vary (44 and 54 on one scan) because the mantel's small statues sometimes split up.
 - **Next:** make small-item grouping steadier; test on a fresh room.
+
+## 2026-11-01: Your Spaces page
+- **Done:** one record per Space on the phone, a page listing them, scan another room, rescan, delete. Existing scans convert automatically. Per-item add and leave out.
+- **Decisions:** recognition runs outside the results screen so it continues while people look elsewhere, one Space at a time because each run costs money.
+- **Next:** test on a phone; item corrections.

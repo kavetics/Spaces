@@ -1,11 +1,12 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
-import { shrinkPhoto } from './api.js'
+import { buildInventory, shrinkPhoto } from './api.js'
 import ClapCatch from './ClapCatch.jsx'
 import Inventory from './Inventory.jsx'
 import Welcome from './Welcome.jsx'
 import VoiceTest from './VoiceTest.jsx'
 import CatchTest from './CatchTest.jsx'
-import { deleteScan, loadScan, saveScan } from './savedScan.js'
+import { deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
+import SpacesPage from './SpacesPage.jsx'
 import SpacePicker from './SpacePicker.jsx'
 import { askMotionPermission } from './sweep.js'
 import './App.css'
@@ -53,21 +54,49 @@ function TestMenu() {
 }
 
 function Game() {
-  const [screen, setScreen] = useState(null) // null while checking for a saved scan, then home → space → scan → inventory
-  const [scan, setScan] = useState(null) // { frames, spaceName, result, itemChoices, savedAt }
-  const [spaceName, setSpaceName] = useState('')
+  const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
+  const [spaces, setSpaces] = useState([])
+  const [openId, setOpenId] = useState(null)
+  const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
+  const [failed, setFailed] = useState({}) // id → why recognition stopped
+  const [progress, setProgress] = useState(null)
+  const running = useRef(null) // only one Space is recognized at a time, since each run costs money
   const fileInput = useRef(null)
 
-  // A saved scan picks up where it left off: its results, or the recognition it never finished.
+  const open = spaces.find(s => s.id === openId)
+  const processing = spaces.some(s => !s.result && !failed[s.id])
+
   useEffect(() => {
     let cancelled = false
-    loadScan().then(saved => {
+    loadSpaces().then(saved => {
       if (cancelled) return
-      if (saved) setScan(saved)
-      setScreen(saved ? 'inventory' : 'home')
+      setSpaces(saved)
+      setScreen(saved.length ? 'spaces' : 'home')
     })
     return () => { cancelled = true }
   }, [])
+
+  function change(id, update) {
+    setSpaces(current => current.map(s => {
+      if (s.id !== id) return s
+      const next = update(s)
+      saveSpace(next)
+      return next
+    }))
+  }
+
+  // Runs here and not on the Space's screen, so it continues while someone looks at other Spaces.
+  // This also restarts a run the phone interrupted by going to sleep.
+  useEffect(() => {
+    const next = spaces.find(s => !s.result && !failed[s.id])
+    if (!next || running.current) return
+    running.current = next.id
+    setProgress(null)
+    buildInventory(next.frames, next.spaceName, setProgress)
+      .then(result => change(next.id, s => ({ ...s, result })))
+      .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
+      .finally(() => { running.current = null })
+  }, [spaces, failed])
 
   function onPhotoFile(event) {
     const file = event.target.files?.[0]
@@ -77,64 +106,97 @@ function Game() {
 
   // Save before recognition starts, so a phone going to sleep can't lose the photos.
   function onScan({ frames }) {
-    const fresh = { frames, spaceName, result: null, itemChoices: {}, savedAt: Date.now() }
-    setScan(fresh)
-    saveScan(fresh)
-    setScreen('inventory')
+    const previous = spaces.find(s => s.id === pending.id)
+    const fresh = {
+      id: previous?.id ?? crypto.randomUUID(),
+      spaceName: pending.name,
+      frames,
+      result: null,
+      itemChoices: {},
+      createdAt: previous?.createdAt ?? Date.now(),
+      savedAt: Date.now(),
+    }
+    saveSpace(fresh)
+    setSpaces(current => (previous ? current.map(s => (s.id === fresh.id ? fresh : s)) : [...current, fresh]))
+    setFailed(({ [fresh.id]: _, ...rest }) => rest)
+    setOpenId(fresh.id)
+    setScreen('space')
   }
 
-  function onResult(result) {
-    setScan(current => {
-      const done = { ...current, result }
-      saveScan(done)
-      return done
-    })
+  // Photos can only be taken after motion access, which iPhones only grant from a tap like this one.
+  function startScan(name, id) {
+    askMotionPermission()
+    setPending({ name, id })
+    setScreen('scan')
   }
 
-  // Add a nearby item or leave one out, and remember the choice.
-  function onItemChoice(id, choice) {
-    setScan(current => {
-      const next = { ...current, itemChoices: { ...current.itemChoices, [id]: choice } }
-      saveScan(next)
-      return next
-    })
+  function onPick(name) {
+    const existing = spaces.find(s => s.spaceName.toLowerCase() === name.toLowerCase())
+    startScan(existing?.spaceName ?? name, existing?.id)
   }
 
   async function onDelete() {
-    await deleteScan()
-    setScan(null)
-    setScreen('home')
+    await deleteSpace(open.id)
+    const left = spaces.filter(s => s.id !== open.id)
+    setSpaces(left)
+    setOpenId(null)
+    setScreen(left.length ? 'spaces' : 'home')
+  }
+
+  const leaveScanner = () => {
+    if (pending?.id) setScreen('space')
+    else setScreen('pick')
   }
 
   return (
     <>
       <input ref={fileInput} type="file" accept="image/*" hidden onChange={onPhotoFile} />
 
-      {screen === 'home' && (
-        <Welcome loadScanner={loadScanner} onAccept={() => { askMotionPermission(); setScreen('space') }} />
+      {screen === 'home' && <Welcome loadScanner={loadScanner} onAccept={() => setScreen('pick')} />}
+
+      {screen === 'spaces' && (
+        <SpacesPage
+          spaces={spaces}
+          failed={failed}
+          processing={processing}
+          onOpen={id => { setOpenId(id); setScreen('space') }}
+          onScanAnother={() => setScreen('pick')}
+        />
       )}
 
-      {screen === 'space' && (
+      {screen === 'pick' && (
         <SpacePicker
-          initial={spaceName}
-          onPick={name => { setSpaceName(name); setScreen('scan') }}
-          onBack={() => setScreen(scan ? 'inventory' : 'home')}
+          usedNames={spaces.map(s => s.spaceName)}
+          onPick={onPick}
+          onBack={() => setScreen(spaces.length ? 'spaces' : 'home')}
         />
       )}
 
       {screen === 'scan' && (
         <Suspense>
           <Camera
-            title={spaceName}
+            title={pending.name}
             hint="Stand in the middle of the space. Tap Start scan, then turn slowly to the right when told."
             onCapture={onScan}
-            onBack={() => setScreen('space')}
+            onBack={leaveScanner}
             onUpload={() => fileInput.current?.click()}
           />
         </Suspense>
       )}
 
-      {screen === 'inventory' && <Inventory scan={scan} onResult={onResult} onItemChoice={onItemChoice} onDelete={onDelete} onScanAgain={() => setScreen('space')} />}
+      {screen === 'space' && open && (
+        <Inventory
+          key={open.id}
+          space={open}
+          progress={running.current === open.id ? progress : null}
+          error={failed[open.id]}
+          onRetry={() => setFailed(({ [open.id]: _, ...rest }) => rest)}
+          onItemChoice={(item, choice) => change(open.id, s => ({ ...s, itemChoices: { ...s.itemChoices, [item]: choice } }))}
+          onDelete={onDelete}
+          onRescan={() => startScan(open.spaceName, open.id)}
+          onBack={() => setScreen('spaces')}
+        />
+      )}
     </>
   )
 }
