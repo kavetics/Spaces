@@ -6,7 +6,6 @@ import { Heading } from '@astryxdesign/core/Heading'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
-import { RECORDING } from './session.js'
 import './Welcome.css'
 
 const MIN_LOADING_MS = 1800 // long enough to read as a scan, not a flicker
@@ -68,7 +67,7 @@ export default function Welcome({ loadScanner, onAccept }) {
               <VStack gap={3}>
                 <Text as="p">Spaces shares your room photos with Meta's AI models to identify what's in them.</Text>
                 <Text as="p">Anything in view may be included, so put away private items, and keep other people, especially children, out of frame.</Text>
-                {RECORDING && <Text as="p">This is a test version: we also save your photos to help improve Spaces.</Text>}
+                {import.meta.env.DEV && <Text as="p">This is a test version: we also save your photos to help improve Spaces.</Text>}
               </VStack>
             </LayoutContent>
           }

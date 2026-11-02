@@ -1,17 +1,12 @@
 {
-  "name": "room-rush-server",
+  "name": "spaces-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node --watch --env-file=../.env src/index.js",
     "start": "node src/index.js",
-    "test:room": "node --env-file=../.env scripts/test-room.js",
-    "test:referee": "node --env-file=../.env scripts/test-referee.js",
-    "test:scan": "node --env-file=../.env scripts/test-scan.js",
-    "test:catch": "node --env-file=../.env scripts/test-catch.js",
-    "test:inventory": "node --env-file=../.env scripts/test-inventory.js",
-    "review": "node --env-file=../.env scripts/review.js"
+    "test:inventory": "node --env-file=../.env scripts/test-inventory.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

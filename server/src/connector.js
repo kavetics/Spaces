@@ -1,0 +1,94 @@
+// A read-only API for connecting Spaces to the Muse app. For now it serves a small sample inventory,
+// to prove the connection works. Real inventories live on the phone, and nothing here can change data.
+import { timingSafeEqual } from 'node:crypto';
+import express from 'express';
+
+const MAX_LIMIT = 50;
+const DEFAULT_LIMIT = 20;
+
+const item = (id, space, category, name, description, quantity = 1) => ({ id, space, category, name, description, quantity });
+const SPACES = [
+  { id: 'living-room', name: 'Living room' },
+  { id: 'backyard', name: 'Backyard' },
+];
+const ITEMS = [
+  item('lr-1', 'living-room', 'furniture', 'brown leather sofa', 'Three-seat reclining sofa'),
+  item('lr-2', 'living-room', 'furniture', 'wooden TV stand', 'Dark wood with drawers'),
+  item('lr-3', 'living-room', 'electronics', 'flat-screen TV', 'Large black wall-mounted TV'),
+  item('lr-4', 'living-room', 'decor', 'patterned area rug', 'Beige and red'),
+  item('lr-5', 'living-room', 'fitness_hobbies', 'teal dumbbell', 'Hexagonal exercise weight', 2),
+  item('by-1', 'backyard', 'other', 'charcoal grill', 'Black kettle grill'),
+  item('by-2', 'backyard', 'furniture', 'folding chair', 'White plastic', 4),
+  item('by-3', 'backyard', 'electronics', 'flat-screen TV', 'Small outdoor TV'),
+];
+
+/** Words in the query must all appear in the item. Plain matching, so results are predictable. */
+export function searchItems({ q, space, category }) {
+  const words = String(q ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  return ITEMS.filter(i => (!space || i.space === space) && (!category || i.category === category)
+    && words.every(w => `${i.name} ${i.description} ${i.category}`.toLowerCase().includes(w)));
+}
+
+function sameKey(given, expected) {
+  const a = Buffer.from(String(given));
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// With no key configured, every request is refused: it fails closed.
+function requireKey(req, res, next) {
+  const expected = process.env.SPACES_CONNECTOR_KEY;
+  if (!expected) return res.status(503).json({ error: 'The connector is not turned on.' });
+  const given = req.get('authorization')?.match(/^Bearer (.+)$/)?.[1];
+  if (!given || !sameKey(given, expected)) return res.status(401).json({ error: 'Missing or wrong key.' });
+  next();
+}
+
+const OPENAPI = {
+  openapi: '3.0.3',
+  info: { title: 'Spaces (sample data)', version: '0.1.0', description: 'Read-only search of a home inventory. All data is a labeled sample.' },
+  servers: [{ url: '/api/connector/v1' }],
+  security: [{ key: [] }],
+  components: { securitySchemes: { key: { type: 'http', scheme: 'bearer' } } },
+  paths: {
+    '/ping': { get: { summary: 'Check the connection. Harmless.', responses: { 200: { description: 'OK' }, 401: { description: 'Missing or wrong key' } } } },
+    '/spaces': { get: { summary: 'List Spaces and their item counts.', responses: { 200: { description: 'OK' } } } },
+    '/items': {
+      get: {
+        summary: 'Search items. With no filters, lists everything.',
+        parameters: [
+          { name: 'q', in: 'query', schema: { type: 'string' }, description: 'Words that must all match, like "sofa".' },
+          { name: 'space', in: 'query', schema: { type: 'string' }, description: 'A Space id from /spaces.' },
+          { name: 'category', in: 'query', schema: { type: 'string', enum: ['furniture', 'electronics', 'appliances', 'decor', 'plants', 'kitchen', 'fitness_hobbies', 'other'] } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: DEFAULT_LIMIT, maximum: MAX_LIMIT } },
+          { name: 'offset', in: 'query', schema: { type: 'integer', default: 0 } },
+        ],
+        responses: { 200: { description: 'OK' } },
+      },
+    },
+  },
+};
+
+const intParam = (value, fallback, max) => {
+  const n = Number.parseInt(value, 10);
+  return Number.isNaN(n) || n < 0 ? fallback : Math.min(n, max);
+};
+
+export const connector = express.Router();
+
+// The spec is public, since it describes the API and holds no data.
+connector.get('/openapi.json', (_req, res) => res.json(OPENAPI));
+connector.use(requireKey);
+connector.get('/ping', (_req, res) => res.json({ ok: true, sample: true }));
+connector.get('/spaces', (_req, res) => res.json({
+  sample: true,
+  spaces: SPACES.map(s => ({ ...s, items: ITEMS.filter(i => i.space === s.id).length })),
+}));
+connector.get('/items', (req, res) => {
+  const { q, space, category } = req.query;
+  const found = searchItems({ q, space, category });
+  const limit = intParam(req.query.limit, DEFAULT_LIMIT, MAX_LIMIT);
+  const offset = intParam(req.query.offset, 0, found.length);
+  res.json({ sample: true, total: found.length, limit, offset, items: found.slice(offset, offset + limit) });
+});
+connector.use((_req, res) => res.status(404).json({ error: 'Not found. This API is read-only.' }));

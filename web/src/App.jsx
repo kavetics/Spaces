@@ -1,60 +1,18 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { buildInventory, shrinkPhoto } from './api.js'
-import ClapCatch from './ClapCatch.jsx'
-import Inventory from './Inventory.jsx'
-import Welcome from './Welcome.jsx'
-import VoiceTest from './VoiceTest.jsx'
-import CatchTest from './CatchTest.jsx'
 import AskMuse from './AskMuse.jsx'
+import Inventory from './Inventory.jsx'
 import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
-import SpacesPage from './SpacesPage.jsx'
 import SpacePicker from './SpacePicker.jsx'
+import SpacesPage from './SpacesPage.jsx'
 import { askMotionPermission } from './sweep.js'
-import './App.css'
+import Welcome from './Welcome.jsx'
 
 // The scanner loads separately, so the welcome screen's loading is real.
 const loadScanner = () => import('./Camera.jsx')
 const Camera = lazy(loadScanner)
 
 export default function App() {
-  // Accuracy test modes: open the app with ?test=catch (voice, no sound recorded) or ?test=claps
-  const test = new URLSearchParams(window.location.search).get('test')
-  if (test === 'catch' || test === 'claps') return <CatchTest claps={test === 'claps'} />
-  if (test === 'high') return <CatchTest high />
-  if (test === 'turn') return <div className="app"><ClapCatch players={2} onBack={() => { window.location.search = '?test=menu' }} /></div>
-  if (test === 'voice') return <VoiceTest />
-  if (test === 'scavenger') return <div className="app"><ClapCatch players={2} gameType="scavenger" onBack={() => { window.location.search = '?test=menu' }} /></div>
-  if (test === 'menu') return <TestMenu />
-  return <Game />
-}
-
-// Shortcuts for testing, so nobody has to scan a room first. Open the app with ?test=menu
-function TestMenu() {
-  const links = [
-    ['turn', '👏 Play Clap Catch', 'Names, rounds, turns, scoreboard and the full report. No scan.'],
-    ['scavenger', '🔎 Play Room Scavenger', 'No scan, so it uses general clues instead of your room.'],
-    ['voice', '🔊 Voice test', 'Can the phone speak while filming, with the mic open or closed? About 2 minutes.'],
-    ['catch', '🗣️ Catch test', '20 throws called out by voice, about 4 minutes. No mic.'],
-    ['high', '🚀 High throw test', '10 throws that leave the top of the frame, about 4 minutes. Turn off any ceiling fan first.'],
-    ['claps', '🔢 Clap test', '13 throws with the mic on, about 2.5 minutes. Read the screen.'],
-  ]
-  return (
-    <div className="app">
-      <main>
-        <h1>Test menu</h1>
-        {links.map(([key, title, about]) => (
-          <a key={key} className="card game test-link" href={`?test=${key}`}>
-            <h3>{title}</h3>
-            <p className="meta">{about}</p>
-          </a>
-        ))}
-        <a className="link" href="/">Full app →</a>
-      </main>
-    </div>
-  )
-}
-
-function Game() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
   const [openId, setOpenId] = useState(null)

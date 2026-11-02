@@ -4,7 +4,6 @@ const BASE_URL = process.env.META_API_BASE_URL || 'https://api.meta.ai/v1';
 export const MODELS = {
   spark: 'muse-spark-1.3', // never use -contributor variants: photos contain people
   sam: 'sam-3.1',
-  image: 'muse-image-1.0',
 };
 
 // Meta's API can briefly answer 404 model_not_found for a valid model (a known issue on their side),
@@ -80,34 +79,11 @@ export async function segment(imageDataUrl, prompt, { minConfidence = 0.5 } = {}
   return { prompt, count: objects.length, objects, ms };
 }
 
-/** Track one concept through a video. Returns boxes per frame: [{ frame, boxes: [{x1,y1,x2,y2}] }]. */
-export async function segmentVideo(videoDataUrl, prompt) {
-  const { data, ms } = await post('/responses', {
-    model: MODELS.sam,
-    store: false,
-    input: [{
-      type: 'message',
-      role: 'user',
-      content: [
-        { type: 'input_text', text: prompt },
-        { type: 'input_video', video_url: videoDataUrl },
-      ],
-    }],
-  });
-  const text = data.output?.[0]?.content?.[0]?.text || '';
-  const frames = text.split('\n').filter(Boolean).map(line => ({
-    frame: Number(line.match(/^<(\d+)f>/)?.[1]),
-    boxes: [...line.matchAll(BOX_RE)].map(m => parseFields(m[1])),
-  }));
-  return { prompt, frames, ms };
-}
-
 /** Ask Muse Spark for JSON that matches a schema. Images are optional data URLs. */
-export async function sparkJSON({ system, prompt, images = [], videos = [], schemaName, schema, effort = process.env.SPARK_EFFORT || 'low' }) {
+export async function sparkJSON({ system, prompt, images = [], schemaName, schema, effort = process.env.SPARK_EFFORT || 'low' }) {
   const content = [
     { type: 'text', text: prompt },
     ...images.map(url => ({ type: 'image_url', image_url: { url } })),
-    ...videos.map(url => ({ type: 'video_url', video_url: { url } })),
   ];
   const { data, ms } = await post('/chat/completions', {
     model: MODELS.spark,

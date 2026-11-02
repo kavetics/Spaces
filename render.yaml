@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SPACES_CONNECTOR_KEY
+        sync: false # paste it in the Render dashboard; never commit it
       - key: MODEL_API_KEY
         sync: false # paste it in the Render dashboard; never commit it
       - key: META_API_BASE_URL

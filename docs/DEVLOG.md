@@ -287,3 +287,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** the phone sends the inventory with each question, so nothing has to be stored on the server. Plain code drops citations that weren't in what was sent.
 - **Learned:** answers took about 2 to 5 s on a small test inventory. The graph's value so far is citations and scope; a speedup is unmeasured.
 - **Next:** test on a real inventory and iPhone, including the keyboard.
+
+## 2026-11-02: Removed the game code
+- **Done:** game screens, routes and scripts removed (old version at tag `room-rush-games`); `CLAUDE.md` and `AGENTS.md` now describe Spaces.
+- **Measured:** first fresh room: 13 of 13 items correct, none missed, 12 of 13 quantities right (a sconce counted 1, should be 2). One small room, counted by the owner.
+- **Next:** Muse app connection if available; otherwise sell listing.
