@@ -9,8 +9,8 @@ import { ProgressBar } from '@astryxdesign/core/ProgressBar'
 import { Switch } from '@astryxdesign/core/Switch'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
-import { cropItem } from './crop.js'
 import { DECISIONS, decisionLabel, decisionOf } from './itemFields.js'
+import { deleteChat, loadChat, saveChat } from './savedSpaces.js'
 import SellForm from './SellForm.jsx'
 import { CATEGORIES, categoryOf, countLabel, sortItems } from './spaceItems.js'
 import './Inventory.css'
@@ -25,7 +25,7 @@ function buildStack(spaces) {
     .map(item => ({ spaceId: space.id, itemId: item.id })))
 }
 
-function Pick({ spaces, onStart, onCancel }) {
+function Pick({ spaces, saved, onStart, onResume, onCancel }) {
   const ready = spaces.filter(s => s.result)
   const [chosen, setChosen] = useState(() => new Set(ready.map(s => s.id)))
   const picked = ready.filter(s => chosen.has(s.id))
@@ -34,8 +34,16 @@ function Pick({ spaces, onStart, onCancel }) {
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack><IconButton label="Your Spaces" icon={<Icon icon="chevronLeft" />} onClick={onCancel} /></HStack>
+      {saved && (
+        <VStack gap={2} className="declutter-resume">
+          <Heading level={2}>Pick up where you left off</Heading>
+          <Text as="p" color="secondary">You stopped at {saved.place + 1} of {saved.stack.length} · {saved.stack.length - saved.place} left.</Text>
+          <ProgressBar label="Items gone through" isLabelHidden value={saved.place} max={saved.stack.length} />
+          <Button label="Resume" variant="primary" size="lg" onClick={onResume} />
+        </VStack>
+      )}
       <VStack gap={1}>
-        <Heading level={1}>Declutter</Heading>
+        <Heading level={1}>{saved ? 'Or start over' : 'Declutter'}</Heading>
         <Text as="p" color="secondary">Go through your things one at a time and decide what to keep, sell or let go. Choose the Spaces to include.</Text>
       </VStack>
       <VStack gap={3}>
@@ -43,22 +51,17 @@ function Pick({ spaces, onStart, onCancel }) {
           <Switch key={s.id} label={s.spaceName} description={countLabel(sortItems(s).inSpace.length)} value={chosen.has(s.id)} onChange={on => toggle(s.id, on)} />
         ))}
       </VStack>
-      <Button label={total ? `Start with ${countLabel(total)}` : 'Choose a Space'} variant="primary" size="lg" isDisabled={!total} onClick={() => onStart(buildStack(picked))} />
+      <Button label={total ? `Start with ${countLabel(total)}` : 'Choose a Space'} variant={saved ? 'secondary' : 'primary'} size="lg" isDisabled={!total} onClick={() => onStart(buildStack(picked))} />
     </VStack>
   )
 }
 
 function Card({ space, item, place, total, canUndo, onDecide, onSellDone, onUndo, onSkip, onChange, onStop }) {
-  const [crop, setCrop] = useState(null)
   const top = useRef(null)
   const current = decisionOf(item.status)
   useEffect(() => {
     top.current?.closest('.inventory')?.scrollTo?.(0, 0)
-    if (!item.view) return
-    let cancelled = false
-    cropItem(space.frames[item.view.photo], item.view, 480).then(url => { if (!cancelled) setCrop(url) }).catch(() => {})
-    return () => { cancelled = true; setCrop(null) }
-  }, [space.frames, item.view])
+  }, [item.id])
 
   return (
     <VStack gap={4} padding={4} className="inventory">
@@ -70,7 +73,7 @@ function Card({ space, item, place, total, canUndo, onDecide, onSellDone, onUndo
         </VStack>
       </HStack>
       <Text color="secondary">{space.spaceName} · {categoryName(item)}</Text>
-      {crop ? <img className="item-photo" src={crop} alt={item.name} /> : <span className="item-photo declutter-blank" />}
+      {item.picture ? <img className="item-photo" src={item.picture} alt={item.name} /> : <span className="item-photo declutter-blank" />}
       <VStack gap={1}>
         <Heading level={1}>{item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}</Heading>
         <Text as="p" color="secondary">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>
@@ -142,12 +145,39 @@ function Summary({ spaces, stack, onAgain, onDone }) {
  * Decluttering one item at a time: pick Spaces, decide on each item with one tap, then see what to
  * sell and what to let go. Every decision is saved as it's made, so stopping partway loses nothing.
  */
+const SESSION = 'declutter'
+const unfinished = s => (s?.stack?.length && s.place < s.stack.length ? s : null)
+
+/** How many items are left in a saved Declutter session, or null when there isn't one. */
+export const declutterLeft = () => loadChat(SESSION).then(s => (unfinished(s) ? s.stack.length - s.place : null))
+
 export default function Declutter({ spaces, onUpdateItem, onExit }) {
   const [stack, setStack] = useState(null)
   const [place, setPlace] = useState(0)
   const [history, setHistory] = useState([]) // what each decision replaced, so Undo can put it back
+  const [saved, setSaved] = useState(undefined) // an unfinished session from before, or null; undefined while loading
 
-  if (!stack) return <Pick spaces={spaces} onCancel={onExit} onStart={s => { setStack(s); setPlace(0); setHistory([]) }} />
+  useEffect(() => { loadChat(SESSION).then(s => setSaved(unfinished(s))) }, [])
+
+  // The session is saved as it goes, so stopping, a reload or a sleeping phone can't lose the place.
+  useEffect(() => {
+    if (!stack) return
+    if (place >= stack.length) deleteChat(SESSION)
+    else saveChat(SESSION, { stack, place, history, savedAt: Date.now() })
+  }, [stack, place, history])
+
+  if (saved === undefined) return null
+  if (!stack) {
+    return (
+      <Pick
+        spaces={spaces}
+        saved={saved}
+        onCancel={onExit}
+        onResume={() => { setStack(saved.stack); setPlace(saved.place); setHistory(saved.history ?? []); setSaved(null) }}
+        onStart={s => { setStack(s); setPlace(0); setHistory([]); setSaved(null) }}
+      />
+    )
+  }
   if (place >= stack.length) return <Summary spaces={spaces} stack={stack} onDone={onExit} onAgain={() => setStack(null)} />
 
   const { spaceId, itemId } = stack[place]

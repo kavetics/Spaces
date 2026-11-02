@@ -1,13 +1,14 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { buildInventory, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
-import Declutter from './Declutter.jsx'
+import Declutter, { declutterLeft } from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
 import ItemDetail from './ItemDetail.jsx'
 import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
+import { makePictures, needsPictures } from './crop.js'
 import { categoryOf } from './spaceItems.js'
 import { askMotionPermission } from './sweep.js'
 import Welcome from './Welcome.jsx'
@@ -22,10 +23,12 @@ export default function App() {
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
+  const [leftToDeclutter, setLeftToDeclutter] = useState(null)
   const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
   const [failed, setFailed] = useState({}) // id → why recognition stopped
   const [progress, setProgress] = useState(null)
   const running = useRef(null) // only one Space is recognized at a time, since each run costs money
+  const picturing = useRef(null) // pictures are made for one Space at a time, to keep memory low
   const synced = useRef({}) // id → the item list the server last got, so unchanged Spaces aren't sent again
   const [shareErrors, setShareErrors] = useState({}) // id → why keeping a shared Space up to date failed
   const fileInput = useRef(null)
@@ -65,6 +68,22 @@ export default function App() {
       .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
       .finally(() => { running.current = null })
   }, [spaces, failed])
+
+  useEffect(() => {
+    if (screen === 'spaces') declutterLeft().then(setLeftToDeclutter)
+  }, [screen])
+
+  // Each item's picture is made once, after recognition, and saved. Older Spaces get theirs here too.
+  useEffect(() => {
+    const next = spaces.find(needsPictures)
+    if (!next || picturing.current) return
+    picturing.current = next.id
+    makePictures(next).then(({ pictures, cover }) => change(next.id, s => (s.savedAt !== next.savedAt ? s : {
+      ...s,
+      cover: cover ?? '',
+      result: { ...s.result, items: s.result.items.map(i => ({ ...i, picture: pictures[i.id] ?? i.picture ?? '' })) },
+    }))).finally(() => { picturing.current = null })
+  }, [spaces])
 
   // A shared Space follows its changes: removed items, added nearby ones, a finished rescan.
   // Waits a moment so quick edits go as one update.
@@ -187,6 +206,7 @@ export default function App() {
           onScanAnother={() => setScreen('pick')}
           onAsk={() => setScreen('ask-all')}
           onDeclutter={() => setScreen('declutter')}
+          declutterLeft={leftToDeclutter}
         />
       )}
 

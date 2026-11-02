@@ -38,13 +38,56 @@ async function run(mode, work, store = STORE) {
 // Storage can be unavailable (private browsing, full phone): scanning still works, it just can't come back.
 const quietly = promise => promise.catch(err => { console.warn('Space not saved:', err); return undefined })
 
-/** space: { id, spaceName, frames: Blob[], result, itemChoices, createdAt, savedAt } */
-export const saveSpace = space => quietly(run('readwrite', s => s.put(space)))
-export const deleteSpace = id => quietly(run('readwrite', s => s.delete(id)))
-export const loadSpaces = () => quietly(run('readonly', s => s.getAll()))
-  .then(spaces => (spaces ?? []).sort((a, b) => a.createdAt - b.createdAt))
+// iPhone browsers can lose photos saved as Blobs in this storage after a reload, so photos are saved as
+// plain bytes and turned back into Blobs when loaded. Converting is cached, since a Space is saved often.
+const bytesOf = new WeakMap()
+async function toStored(blob) {
+  if (!(blob instanceof Blob)) return blob
+  if (!bytesOf.has(blob)) bytesOf.set(blob, { bytes: await blob.arrayBuffer(), type: blob.type || 'image/jpeg' })
+  return bytesOf.get(blob)
+}
+function fromStored(photo) {
+  if (photo instanceof Blob || !photo?.bytes) return photo
+  const blob = new Blob([photo.bytes], { type: photo.type })
+  bytesOf.set(blob, photo)
+  return blob
+}
 
-// One saved chat per Space, plus 'all' for the one about every Space.
+async function storable(space) {
+  const items = space.result?.items
+  return {
+    ...space,
+    frames: await Promise.all(space.frames.map(toStored)),
+    ...(items && { result: { ...space.result, items: await Promise.all(items.map(async i => (i.salePhotos ? { ...i, salePhotos: await Promise.all(i.salePhotos.map(toStored)) } : i))) } }),
+  }
+}
+
+function usable(space) {
+  const items = space.result?.items
+  return {
+    ...space,
+    frames: space.frames.map(fromStored),
+    ...(items && { result: { ...space.result, items: items.map(i => (i.salePhotos ? { ...i, salePhotos: i.salePhotos.map(fromStored) } : i)) } }),
+  }
+}
+
+// Saves of one Space happen one after another, so a slow earlier save can't overwrite a newer one.
+const pending = new Map()
+
+/** space: { id, spaceName, frames: Blob[], result, itemChoices, cover, createdAt, savedAt } */
+export function saveSpace(space) {
+  const next = (pending.get(space.id) ?? Promise.resolve())
+    .then(() => storable(space))
+    .then(stored => run('readwrite', s => s.put(stored)))
+  pending.set(space.id, quietly(next))
+  return pending.get(space.id)
+}
+export const deleteSpace = id => quietly((pending.get(id) ?? Promise.resolve()).then(() => run('readwrite', s => s.delete(id))))
+export const loadSpaces = () => quietly(run('readonly', s => s.getAll()))
+  .then(spaces => (spaces ?? []).map(usable).sort((a, b) => a.createdAt - b.createdAt))
+
+// One saved chat per Space, plus 'all' for the one about every Space. The same store keeps
+// the Declutter session under 'declutter'.
 export const saveChat = (key, messages) => quietly(run('readwrite', s => s.put(messages, key), CHATS))
 export const loadChat = key => quietly(run('readonly', s => s.get(key), CHATS))
 export const deleteChat = key => quietly(run('readwrite', s => s.delete(key), CHATS))

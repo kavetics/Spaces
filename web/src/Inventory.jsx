@@ -16,7 +16,6 @@ import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
-import { cropItem } from './crop.js'
 import { decisionLabel, progress as itemProgress } from './itemFields.js'
 import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
@@ -32,7 +31,6 @@ const UNDO_MS = 6000
 export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
-  const [crops, setCrops] = useState({})
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
   const [askKey, setAskKey] = useState(false)
@@ -52,13 +50,6 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusItem])
 
-  useEffect(() => {
-    if (!result) return
-    let cancelled = false
-    Promise.all(result.items.filter(i => i.view).map(async i => [i.id, await cropItem(frames[i.view.photo], i.view).catch(() => null)]))
-      .then(pairs => { if (!cancelled) setCrops(Object.fromEntries(pairs)) })
-    return () => { cancelled = true }
-  }, [frames, result])
 
   const backButton = <IconButton label="Your Spaces" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
   const dialogs = (
@@ -172,7 +163,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           {actionsBelow}
         </VStack>
       )}
-      startContent={crops[item.id] ? <img className="inventory-crop" src={crops[item.id]} alt="" data-item={item.id} /> : <span className="inventory-crop" data-item={item.id} />}
+      startContent={item.picture ? <img className="inventory-crop" src={item.picture} alt="" data-item={item.id} /> : <span className="inventory-crop" data-item={item.id} />}
       endContent={sideAction}
     />
   )

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
@@ -8,7 +7,6 @@ import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/Segme
 import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
-import { cropItem } from './crop.js'
 import { DECISIONS, decisionOf } from './itemFields.js'
 import SellForm from './SellForm.jsx'
 import { categoryOf, CATEGORIES } from './spaceItems.js'
@@ -16,22 +14,15 @@ import './Inventory.css'
 
 /** One item: its decision, and when it's for sale, the photos and details a listing needs. */
 export default function ItemDetail({ space, item, onChange, onBack, onSave }) {
-  const [crop, setCrop] = useState(null)
   const toast = useToast()
   const category = CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
 
-  useEffect(() => {
-    if (!item.view) return
-    let cancelled = false
-    cropItem(space.frames[item.view.photo], item.view, 480).then(url => { if (!cancelled) setCrop(url) }).catch(() => {})
-    return () => { cancelled = true }
-  }, [space.frames, item.view])
 
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack><IconButton label={space.spaceName} icon={<Icon icon="chevronLeft" />} onClick={onBack} /></HStack>
       <VStack gap={3}>
-        {crop && <img className="item-photo" src={crop} alt={item.name} />}
+        {item.picture && <img className="item-photo" src={item.picture} alt={item.name} />}
         <VStack gap={1}>
           <Heading level={1}>{item.name}</Heading>
           <Text color="secondary">{[space.spaceName, category, item.quantity > 1 ? `${item.quantity} of these` : null].filter(Boolean).join(' · ')}</Text>

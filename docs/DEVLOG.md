@@ -315,3 +315,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** Declutter from Your Spaces: pick Spaces, then one item at a time with Keep, Sell or Let go, progress, Undo and Skip; Sell opens the sale form on the card. A summary lists what to sell (flagging items that still need photos) and what to let go. Let go replaces Donate and Toss. Items have a Save button.
 - **Decisions:** buttons, not swipes, so three choices are hard to get wrong. Every decision saves as it's made, so stopping partway loses nothing. Nearby items stay out of the stack.
 - **Next:** test on a phone; README and demo video.
+
+## 2026-11-02: Reliable pictures, Declutter resume
+- **Done:** item pictures and a Space cover are made once after a scan and saved, instead of cropping full photos every time a screen opens. Photos are stored as bytes. Declutter saves its place, and Your Spaces offers to resume.
+- **Learned:** pictures failed on the phone but not on the Mac. The likely causes are memory (one full-photo decode per picture, all at once) and iPhone browsers losing Blobs saved in IndexedDB; both are now avoided. Not yet confirmed on the phone.
+- **Next:** confirm pictures on the phone; README and demo video.

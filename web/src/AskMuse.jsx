@@ -48,9 +48,10 @@ function Citation({ cited, onClose }) {
         header={<DialogHeader title={item.name} subtitle={`${space.spaceName} · Scanned ${scannedAt(space.savedAt)}`} onOpenChange={onClose} />}
         content={
           <LayoutContent>
+            {!photo && item.picture && <img className="item-photo" src={item.picture} alt={item.name} />}
             {photo && (
               <figure className="citation-photo">
-                <img src={photo} alt={`Scan photo showing ${item.name}`} />
+                <img src={photo} alt={`Scan photo showing ${item.name}`} onError={() => setPhoto(null)} />
                 {box && (
                   <span
                     className="citation-box"

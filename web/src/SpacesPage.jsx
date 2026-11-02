@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
@@ -15,26 +14,18 @@ function status(space, failed) {
 }
 
 function SpaceRow({ space, failed, onOpen }) {
-  const [photo, setPhoto] = useState(null)
-  const frame = space.frames[0]
-  useEffect(() => {
-    if (!frame) return
-    const url = URL.createObjectURL(frame)
-    setPhoto(url)
-    return () => URL.revokeObjectURL(url)
-  }, [frame])
   return (
     <ListItem
       label={space.spaceName}
       description={status(space, failed)}
-      startContent={photo ? <img className="inventory-crop" src={photo} alt="" /> : <span className="inventory-crop" />}
+      startContent={space.cover ? <img className="inventory-crop" src={space.cover} alt="" /> : <span className="inventory-crop" />}
       onClick={onOpen}
     />
   )
 }
 
 /** Every Space on this phone, and the way to scan another. */
-export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, onDeclutter }) {
+export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, onDeclutter, declutterLeft }) {
   return (
     <VStack gap={4} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
@@ -45,7 +36,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
         {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
       </List>
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
-      {spaces.some(s => s.result) && <Button label="Declutter" variant="primary" size="lg" onClick={onDeclutter} />}
+      {spaces.some(s => s.result) && <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter'} variant="primary" size="lg" onClick={onDeclutter} />}
       {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" size="lg" onClick={onAsk} />}
     </VStack>
   )

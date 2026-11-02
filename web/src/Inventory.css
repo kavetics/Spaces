@@ -14,3 +14,4 @@
 .declutter-progress { flex: 1; min-width: 0; }
 .declutter-choices > * { flex: 1; }
 .declutter-blank { display: block; aspect-ratio: 4 / 3; }
+.declutter-resume { padding: var(--spacing-4); border-radius: var(--radius-md); background: var(--color-background-muted); }
