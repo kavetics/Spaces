@@ -17,10 +17,10 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] Test the camera on iPhone
 
 ## Backlog (in order, after the in-app camera works)
-- [ ] UI optimizations: make the scanner's text and white dot easier to see against bright rooms (hard to read in the iPhone test)
+- [x] UI optimizations: make the scanner's text and white dot easier to see against bright rooms (hard to read in the iPhone test)
 - [x] Keep the latest scan on the phone through sleep and reloads
 - [x] Keep many Spaces on the phone, with a Your Spaces page
-- [ ] Let people correct item names and add items by hand
+- [x] Let people correct item names and add items by hand
 - [ ] Store scans on the server (Supabase) for sharing and voting
 - [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
 - [x] Scanning guide; scan a Space in several parts
@@ -31,7 +31,7 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [x] Item details following the Muse schema; keep, sell, donate or toss; sell flow with AI-filled details
 - [x] Share with Muse: per-Space sharing to Supabase, read by the Muse connector
 - [x] Ask Muse in the app, with citations, for one Space or all Spaces
-- [ ] Let Ask Muse take actions, like removing an item or drafting a listing
+- [x] Ask Muse offers to draft a listing for an item (other actions, like removing an item, later)
 - [ ] Measure recognition on real scans against a hand-written answer key; results vary between runs
 - [x] ⑦ Referee mode: record a turn with sound (hold, or solo countdown), player x of y
 - [x] Catch judge: SAM follows the ball, Muse Spark rules caught, dropped or unclear

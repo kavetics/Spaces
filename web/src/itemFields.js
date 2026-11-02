@@ -43,6 +43,34 @@ export function shareableFields(item) {
   }
 }
 
+/** What a listing may say about an item. Private fields are left out here, before anything is sent. */
+export function listingFields(item) {
+  const d = item.details ?? {}
+  return {
+    name: item.name,
+    description: item.description ?? '',
+    category: item.category,
+    quantity: item.quantity ?? 1,
+    brand: d.brand ?? null,
+    model: d.model ?? null,
+    size: d.size ?? null,
+    condition: d.condition ?? null,
+    conditionNotes: d.conditionNotes ?? null,
+    defects: d.defects ?? [],
+    includedItems: d.includedItems ?? [],
+    dimensions: d.dimensions ?? null,
+    attributes: d.attributes ?? {},
+    working: d.working ?? null,
+    estimatedValue: d.estimatedValue?.amount ?? null,
+    askingPrice: d.askingPrice ?? null,
+  }
+}
+
+/** The draft as one piece of text, ready to paste into a listing. */
+export function listingText({ title, description }, price) {
+  return [title, price ? `$${price}` : null, description].filter(Boolean).join('\n\n')
+}
+
 /**
  * Adds what the AI found to an item's details without overwriting anything the person typed.
  * Fields the AI filled are remembered, so the screen can label them until the person edits them.
@@ -66,6 +94,9 @@ export function mergeAiDetails(details = {}, found) {
 export function editDetail(details = {}, key, value) {
   return { ...details, [key]: value, aiFields: (details.aiFields ?? []).filter(f => f !== key) }
 }
+
+/** Marks what the person added or changed, so it's clear which parts didn't come from the scan. */
+export const byYou = item => (item.addedByHand ? 'Added by you' : item.editedByHand ? 'Edited by you' : null)
 
 /** "12 of 30 decided", and what the items marked to sell might bring, for the Space header. */
 export function progress(items) {

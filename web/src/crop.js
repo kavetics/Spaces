@@ -78,5 +78,16 @@ export async function makePictures(space) {
   return { pictures, cover }
 }
 
+/** A whole photo as a saved picture, for items people add by hand. */
+export async function pictureOf(photo) {
+  const image = await decode(photo)
+  try {
+    const { width, height } = sizeOf(image)
+    return draw(image, 0, 0, width, height, PICTURE_PX)
+  } finally {
+    release(image)
+  }
+}
+
 /** Whether a Space still needs its pictures made. */
 export const needsPictures = space => Boolean(space.result) && (space.cover == null || space.result.items.some(i => i.view && !i.picture))

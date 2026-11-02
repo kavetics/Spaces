@@ -9,6 +9,7 @@ import { connector } from './connector.js';
 import { shared } from './shared.js';
 import { describeForSale } from './itemDetails.js';
 import { findRepeats } from './repeats.js';
+import { draftListing } from './listing.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -45,6 +46,15 @@ app.post('/api/item-details', upload.array('photos', 6), async (req, res, next) 
     if (!req.files?.length) throw Object.assign(new Error('Attach photos of the item as "photos".'), { status: 400 });
     const item = JSON.parse(req.body.item || '{}');
     res.json(await describeForSale(req.files.map(f => toDataUrl(f.buffer, f.mimetype)), item));
+  } catch (err) { next(err); }
+});
+
+// A sale listing drafted from an item's listing-safe details. Nothing is posted anywhere.
+app.post('/api/listing', express.json({ limit: '64kb' }), async (req, res, next) => {
+  try {
+    const { item } = req.body ?? {};
+    if (!item?.name) throw Object.assign(new Error('Send the item to list.'), { status: 400 });
+    res.json(await draftListing(item));
   } catch (err) { next(err); }
 });
 

@@ -19,12 +19,19 @@ import Welcome from './Welcome.jsx'
 const loadScanner = () => import('./Camera.jsx')
 const Camera = lazy(loadScanner)
 
+/** A new scan's items, then the hand-added ones it kept, numbered after them so ids stay unique. */
+function withHandItems(result, handItems) {
+  const firstId = Math.max(-1, ...result.items.map(i => i.id)) + 1
+  return { ...result, items: [...result.items, ...handItems.map((i, n) => ({ ...i, id: firstId + n }))] }
+}
+
 export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
+  const [itemFrom, setItemFrom] = useState(null) // an item opened from Ask Muse goes back there, with its listing drafting
   const [leftToDeclutter, setLeftToDeclutter] = useState(null)
   const [showGuide, setShowGuide] = useState(false)
   const [parts, setParts] = useState(1) // parts of the open Space scanned in this go, for the "Is there more?" screen
@@ -70,7 +77,7 @@ export default function App() {
     running.current = next.id
     setProgress(null)
     const work = next.result ? addToSpace(next) : buildInventory(next.frames, next.spaceName, setProgress)
-      .then(result => change(next.id, s => ({ ...s, result })))
+      .then(result => change(next.id, ({ handItems = [], ...s }) => ({ ...s, result: withHandItems(result, handItems) })))
     work
       .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
       // A run's own update lands while it still counts as running, so look for queued work again after.
@@ -191,6 +198,8 @@ export default function App() {
       spaceName: pending.name,
       frames,
       result: null,
+      // Items added by hand weren't scanned, so a rescan keeps them. They join the new list once it's ready.
+      handItems: [...(previous?.handItems ?? []), ...(previous?.result?.items.filter(i => i.addedByHand) ?? [])],
       itemChoices: {},
       shared: previous?.shared ?? false, // a rescan of a shared Space updates what Muse sees once it's ready
       createdAt: previous?.createdAt ?? Date.now(),
@@ -225,6 +234,27 @@ export default function App() {
       ...s,
       result: { ...s.result, items: s.result.items.map(i => (i.id === itemId ? { ...i, ...patch, updatedAt: new Date().toISOString() } : i)) },
     }))
+  }
+
+  // An item the scan missed. It has no scan photo, only the person's own photo if they added one.
+  function addItem(spaceId, { name, category, quantity, picture }) {
+    const id = Math.max(-1, ...spaces.find(s => s.id === spaceId).result.items.map(i => i.id)) + 1
+    change(spaceId, s => {
+      const item = { id, name, category, quantity, description: '', photos: [], needsReview: false, inSpace: true, area: '', picture: picture ?? '', addedByHand: true, addedAt: new Date().toISOString() }
+      return { ...s, openSections: { ...s.openSections, inventory: true, [category]: true }, result: { ...s.result, items: [...s.result.items, item] } }
+    })
+    setFocusItem(id)
+  }
+
+  // From Muse's offer in the chat: the person chose to sell it, so mark it Sell and open its listing.
+  function draftFromChat(spaceId, itemId) {
+    const item = spaces.find(s => s.id === spaceId)?.result?.items.find(i => i.id === itemId)
+    if (!item) return
+    if (item.status !== 'sell') updateItem(spaceId, itemId, { status: 'sell' })
+    setItemFrom(screen)
+    setOpenId(spaceId)
+    setOpenItemId(itemId)
+    setScreen('item')
   }
 
   // Deletes the item and returns how to put it back. A rescan in between makes that do nothing.
@@ -330,9 +360,10 @@ export default function App() {
             if (same) change(open.id, s => ({ ...s, result: { ...s.result, items: s.result.items.filter(i => i.id !== item.id) } }))
             else updateItem(open.id, item.id, { possibleRepeatOf: null })
           }}
+          onAddItem={fields => addItem(open.id, fields)}
           onBack={() => setScreen('spaces')}
           onAsk={() => setScreen('ask-space')}
-          onOpenItem={id => { setOpenItemId(id); setScreen('item') }}
+          onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
           shareError={shareErrors[open.id]}
@@ -347,8 +378,11 @@ export default function App() {
           space={open}
           item={openItem}
           onChange={patch => updateItem(open.id, openItem.id, patch)}
-          onBack={() => setScreen('space')}
+          backLabel={itemFrom ? 'Ask Muse' : undefined}
+          autoDraft={Boolean(itemFrom)}
+          onBack={() => setScreen(itemFrom ?? 'space')}
           onSave={() => {
+            if (itemFrom) { setScreen(itemFrom); return }
             // Back to the item in its list, with its sections open so the change is in view.
             change(open.id, s => ({ ...s, openSections: { ...s.openSections, inventory: true, [categoryOf(openItem)]: true } }))
             setFocusItem(openItem.id)
@@ -359,8 +393,8 @@ export default function App() {
 
       {screen === 'declutter' && <Declutter spaces={spaces} onUpdateItem={updateItem} onExit={() => setScreen('spaces')} />}
 
-      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} />}
-      {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} />}
+      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}
+      {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} onDraftListing={draftFromChat} />}
     </>
   )
 }

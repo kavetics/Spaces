@@ -89,6 +89,21 @@ export async function describeForSale(photos, item) {
   }
 }
 
+// A sale listing drafted by Muse from an item's listing-safe details.
+export async function draftListing(item) {
+  try {
+    return await json(await fetch('/api/listing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item }),
+      signal: AbortSignal.timeout(90000),
+    }));
+  } catch (err) {
+    if (isConnectionError(err)) throw new Error("Couldn't reach Muse. Check your connection.");
+    throw err;
+  }
+}
+
 /** Shrink phone photos to 1280px before upload: faster upload and fewer AI tokens. */
 export async function shrinkPhoto(file, maxSide = 1280) {
   const bitmap = await createImageBitmap(file);

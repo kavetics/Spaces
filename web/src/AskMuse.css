@@ -17,6 +17,8 @@
   border-radius: var(--radius-md);
   background: var(--color-background-muted);
 }
+.ask-muse-offer { border: var(--border-width) solid var(--color-border-emphasized); border-radius: var(--radius-md); }
+.ask-muse-offer-text { flex: 1; min-width: 0; align-items: flex-start; }
 .ask-muse-input {
   flex: none;
   display: flex;

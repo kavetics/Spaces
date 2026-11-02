@@ -12,6 +12,7 @@ import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { describeForSale, shrinkPhoto } from './api.js'
 import { CONDITIONS, LISTING, editDetail, mergeAiDetails } from './itemFields.js'
+import ListingDraft from './ListingDraft.jsx'
 import SalePhoto from './SalePhoto.jsx'
 import './Inventory.css'
 
@@ -19,7 +20,7 @@ const MAX_SALE_PHOTOS = 6
 const list = text => text.split(',').map(s => s.trim()).filter(Boolean)
 
 /** What selling an item needs: more photos, AI-filled details to check, a price and private notes. */
-export default function SellForm({ item, onChange }) {
+export default function SellForm({ item, onChange, autoDraft }) {
   const details = item.details ?? {}
   const ai = new Set(details.aiFields ?? [])
   const salePhotos = item.salePhotos ?? []
@@ -123,6 +124,8 @@ export default function SellForm({ item, onChange }) {
           </SegmentedControl>
         </VStack>
       </VStack>
+
+      <ListingDraft item={item} onChange={onChange} autoDraft={autoDraft} />
 
       <VStack gap={3}>
         <Heading level={2}>Private</Heading>

@@ -15,6 +15,7 @@ import { deleteChat, loadChat, saveChat } from './savedSpaces.js'
 import { buildGraph, findCited } from './spaceGraph.js'
 import { scannedAt } from './spaceItems.js'
 import './AskMuse.css'
+import './Inventory.css'
 
 const STARTERS = {
   one: ["What's most valuable here?", 'What could I sell?', 'What could I donate?'],
@@ -80,8 +81,31 @@ function Answer({ parts, spaces, onCite }) {
   )
 }
 
+/** Muse's offer to draft a listing: the item, and a button that marks it Sell and opens the draft. */
+function ListingOffer({ action, spaces, onDraft }) {
+  const cited = findCited(spaces, action.cite)
+  if (!cited) return null
+  const { space, item } = cited
+  const selling = item.status === 'sell'
+  return (
+    <HStack gap={3} vAlign="center" padding={3} className="ask-muse-offer">
+      {item.picture ? <img className="inventory-crop" src={item.picture} alt="" /> : <span className="inventory-crop" />}
+      <VStack gap={1} className="ask-muse-offer-text">
+        <Text weight="semibold">{item.name}</Text>
+        <Text type="supporting">{space.spaceName}{item.listingDraft ? ' · Listing drafted' : ''}</Text>
+        <Button
+          label={item.listingDraft ? 'Open listing' : selling ? 'Draft a listing' : 'Sell and draft a listing'}
+          variant="primary"
+          size="sm"
+          onClick={() => onDraft(space.id, item.id)}
+        />
+      </VStack>
+    </HStack>
+  )
+}
+
 /** Chat about one Space, or all of them when space is null. Only ever knows about its own scope. */
-export default function AskMuse({ spaces, space, onBack }) {
+export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
   const scope = space ? space.spaceName : 'All Spaces'
   const chatKey = space ? space.id : 'all'
   const inScope = space ? [space] : spaces
@@ -113,8 +137,9 @@ export default function AskMuse({ spaces, space, onBack }) {
       const { nodes, places } = buildGraph(inScope)
       // Past answers go back as plain text, with citations written as the item's name.
       const history = asked.map(m => ({ role: m.role, text: m.text ?? m.parts.map(p => p.text ?? p.cite.name).join('') }))
-      const { answer } = await askMuse({ scope, spaces: nodes, messages: history })
-      const done = [...asked, { role: 'assistant', parts: toParts(answer, places) }]
+      const { answer, action } = await askMuse({ scope, spaces: nodes, messages: history })
+      const offer = action && places[action.ref] ? { type: action.type, cite: places[action.ref] } : null
+      const done = [...asked, { role: 'assistant', parts: toParts(answer, places), ...(offer && { action: offer }) }]
       setMessages(done)
       saveChat(chatKey, done)
     } catch (err) {
@@ -153,7 +178,12 @@ export default function AskMuse({ spaces, space, onBack }) {
         )}
         {messages.map((m, i) => (m.role === 'user'
           ? <Text key={i} as="p" className="ask-muse-question">{m.text}</Text>
-          : <Answer key={i} parts={m.parts} spaces={spaces} onCite={setCited} />))}
+          : (
+            <VStack key={i} gap={2}>
+              <Answer parts={m.parts} spaces={spaces} onCite={setCited} />
+              {m.action && <ListingOffer action={m.action} spaces={spaces} onDraft={onDraftListing} />}
+            </VStack>
+          )))}
         {waiting && <Spinner size="md" label="Thinking…" />}
         {error && <Text as="p" role="alert">{error} Your question is back in the box, so you can try again.</Text>}
         <span ref={end} />

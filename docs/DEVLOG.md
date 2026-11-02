@@ -321,14 +321,20 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Learned:** pictures failed on the phone but not on the Mac. The likely causes are memory (one full-photo decode per picture, all at once) and iPhone browsers losing Blobs saved in IndexedDB; both are now avoided. Not yet confirmed on the phone.
 - **Next:** confirm pictures on the phone; README and demo video.
 
-## 2026-11-03: Add more to a Space
+## 2026-11-02: Add more to a Space
 - **Done:** Add more on a Space: scan from another spot or add photos. Only the new photos are recognized; Spark compares new items with the existing ones by picture, and likely repeats wait in "Possible repeats" for the person to confirm. Decisions and sale details are kept.
 - **Decisions:** never merge silently: a confirmed repeat is removed, a "different" one is kept. If the check fails, new items are just added.
 - **Learned:** on real photos, Spark matched the same sofa from a different angle and kept a similar loveseat separate (about 10 to 16 s).
 - **Next:** test on the backyard; README and demo video.
 
-## 2026-11-03: Scanning guide and multi-part scans
+## 2026-11-02: Scanning guide and multi-part scans
 - **Done:** a guide (open room vs L-shaped Space) before every scan or rescan, with a Scanning tips link on the scanner. After each part, "Is there more?" offers another part, photos, or Done, while earlier parts process in the background.
 - **Fixed:** a finished recognition run only started the next queued one if something else on the page changed; now it always checks again.
 - **Decisions:** the backyard test of Add more found repeats well enough, so multiple scans is the approach for irregular Spaces. A block map and true spatial mapping (native app with Apple's RoomPlan, or matching items between scans) go on the roadmap.
 - **Next:** README, Meta feedback report, demo video.
+
+## 2026-11-02: Fix items, listings drafted by Muse
+- **Done:** scanner text sits on dark pills and the aiming dot has a dark edge, for bright rooms. Items can be edited (name, category, quantity) and added by hand with an optional photo, marked "Edited by you" or "Added by you". On a sold item, Muse drafts a listing: title, description and a price range, editable and copyable, never posted. In Ask Muse, "help me sell the lamp" brings a card that marks it Sell and drafts its listing.
+- **Decisions:** a rescan keeps hand-added items but replaces edits to scanned ones, and the dialog says so. Listings use only listing-safe fields, picked on the phone and again on the server, so private details never reach the model. Muse's action is checked like a citation: only a known kind, on an item really in the inventory.
+- **Learned:** a draft takes about 4 s and an answer with a card about 2 s. Spark mentioned listed defects and stayed modest on price.
+- **Next:** iPhone check, README, accuracy numbers, Meta feedback report, video.

@@ -17,7 +17,8 @@ import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { shrinkPhoto } from './api.js'
-import { decisionLabel, progress as itemProgress } from './itemFields.js'
+import { byYou, decisionLabel, progress as itemProgress } from './itemFields.js'
+import ItemForm from './ItemForm.jsx'
 import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
@@ -29,9 +30,10 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
+  const [addingItem, setAddingItem] = useState(false)
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
   const [askAdd, setAskAdd] = useState(false)
@@ -61,7 +63,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         isOpen={askRescan}
         onOpenChange={setAskRescan}
         title={`Rescan ${spaceName}?`}
-        description="Your new scan replaces these photos and this item list, including what you added or removed."
+        description="Your new scan replaces these photos and the scanned items, including your edits and removals. Items you added by hand stay."
         actionLabel="Rescan"
         actionVariant="primary"
         onAction={() => { setAskRescan(false); onRescan() }}
@@ -184,7 +186,8 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       description={(
         <VStack gap={1}>
           {decisionLabel(item.status) && <Text as="p" type="label">{statusLine(item)}</Text>}
-          <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>
+          {byYou(item) && <Text as="p" type="supporting">{byYou(item)}</Text>}
+          {item.description && <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>}
           {actionsBelow}
         </VStack>
       )}
@@ -311,7 +314,9 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         </VStack>
       ))}
 
+      <Button label="Add an item" onClick={() => setAddingItem(true)} />
       <Button label={`Ask Muse about ${spaceName}`} variant="primary" size="lg" onClick={onAsk} />
+      {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>
   )
