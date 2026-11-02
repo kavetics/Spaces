@@ -267,3 +267,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** name the Space before scanning; Spark marks what's in it and which area everything else is in; "Also spotted nearby" with add or leave out, saved on the phone.
 - **Decisions:** labels instead of an entrance photo, because an open plan has no doorway to mark the edge. The person has the final say, and nothing nearby silently disappears.
 - **Next:** test on a fresh room; speed up merging.
+
+## 2026-11-01: Categories
+- **Done:** 8 categories with one-line rules; results grouped with counts, "Not sure" last in each. Older saved scans still sort correctly.
+- **Learned:** a shorter list with rules stopped items like dumbbells changing category between runs. Item counts still vary (44 and 54 on one scan) because the mantel's small statues sometimes split up.
+- **Next:** make small-item grouping steadier; test on a fresh room.

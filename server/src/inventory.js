@@ -28,7 +28,18 @@ export function isClutter(item) {
   return CLUTTER.test(text) && !HOLDS_CLUTTER.test(text);
 }
 
-const CATEGORIES = ['furniture', 'electronics', 'appliance', 'lighting', 'decor', 'textile', 'storage', 'books_media', 'plant', 'tool', 'outdoor', 'toy_game', 'kitchenware', 'other'];
+// A short list with clear rules, so the same thing gets the same category on every scan.
+const CATEGORIES = ['furniture', 'electronics', 'appliances', 'decor', 'plants', 'kitchen', 'fitness_hobbies', 'other'];
+const CATEGORY_RULES = [
+  'Categories: furniture is seating, tables, beds and storage furniture.',
+  'electronics is screens, computers, phones, speakers and game consoles.',
+  'appliances is freestanding machines like fridges, washers, fans and vacuums.',
+  'decor is art, mirrors, vases, candles, statues, lamps, rugs, curtains, pillows and blankets.',
+  'plants is any plant, real or artificial, with its pot.',
+  'kitchen is cookware, utensils and small kitchen items.',
+  'fitness_hobbies is exercise gear, toys, games, books, instruments, crafts, sewing machines and tools.',
+  'other is anything else, like bags.',
+].join(' ');
 
 const PHOTO_SCHEMA = {
   type: 'object',
@@ -70,6 +81,7 @@ const PHOTO_SYSTEM = [
   'List only what you can actually see. Never guess at what is out of view or inside something closed.',
   'Group identical things in this photo into one entry, like "dining chair", with one box for each. Things that differ, like a sofa and a loveseat, are separate entries.',
   'Skip everyday clutter that nobody would track: papers, mail and documents; loose or piled clothes; takeout containers, food and drinks; trash and packaging; paper towels, tissues, soap, toiletries and cleaning supplies; everyday cups, mugs and dishes; chargers and cables.',
+  CATEGORY_RULES,
   'Do not list people, pets, or anything built into the home: walls, floors, ceilings, doors, windows, built-in lights, or outlets.',
   'Do not read out or describe private details such as documents, screens, or the people in photographs.',
 ].join(' ');
@@ -279,6 +291,13 @@ function bestView(sightings) {
   return best;
 }
 
+// Halves of one item can get different categories. Ties go to the first seen.
+function mostCommon(values) {
+  const counts = new Map();
+  values.forEach(v => counts.set(v, (counts.get(v) || 0) + 1));
+  return [...counts].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+}
+
 function toItem(group, id) {
   const { sightings } = group;
   const located = sightings.some(s => s.things.some(t => t.located));
@@ -286,7 +305,7 @@ function toItem(group, id) {
     id,
     name: group.name,
     description: group.description,
-    category: sightings[0].category,
+    category: mostCommon(sightings.map(s => s.category)),
     inSpace: group.in_space !== false, // when in doubt it stays in; a person can always leave it out
     area: (group.area || 'nearby').trim().toLowerCase(),
     // The same thing is often in two photos, so quantity is the highest count in any one photo, never the sum.

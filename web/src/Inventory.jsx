@@ -35,6 +35,24 @@ async function cropItem(frame, { box, wide }) {
   return canvas.toDataURL('image/jpeg', 0.8)
 }
 
+// In display order: what people care about most comes first, and Other is last.
+const CATEGORIES = [
+  ['furniture', 'Furniture'],
+  ['electronics', 'Electronics'],
+  ['appliances', 'Appliances'],
+  ['decor', 'Decor'],
+  ['plants', 'Plants'],
+  ['kitchen', 'Kitchen'],
+  ['fitness_hobbies', 'Fitness & hobbies'],
+  ['other', 'Other'],
+]
+// Scans saved before the list was shortened used these names.
+const OLD_CATEGORIES = { appliance: 'appliances', lighting: 'decor', textile: 'decor', storage: 'furniture', books_media: 'fitness_hobbies', plant: 'plants', tool: 'fitness_hobbies', outdoor: 'other', toy_game: 'fitness_hobbies', kitchenware: 'kitchen' }
+const categoryOf = item => {
+  const category = OLD_CATEGORIES[item.category] ?? item.category
+  return CATEGORIES.some(([id]) => id === category) ? category : 'other'
+}
+
 // React starts effects twice in development, and returning to this screen starts them again.
 // One set of photos only ever gets one recognition run at a time, since each run costs money.
 const running = new WeakMap()
@@ -132,7 +150,18 @@ export default function Inventory({ scan, onResult, onAreaChoice, onDelete, onSc
       </VStack>
       {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some items may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
-      {inSpace.length > 0 && <List hasDividers edge="flush">{inSpace.map(row)}</List>}
+      {CATEGORIES.map(([id, label]) => {
+        const inCategory = inSpace.filter(i => categoryOf(i) === id)
+        if (!inCategory.length) return null
+        const sure = inCategory.filter(i => !i.needsReview)
+        const unsure = inCategory.filter(i => i.needsReview)
+        return (
+          <VStack key={id} gap={2}>
+            <Heading level={2}>{label} ({inCategory.length})</Heading>
+            <List hasDividers edge="flush">{[...sure, ...unsure].map(row)}</List>
+          </VStack>
+        )
+      })}
 
       {undecided.length > 0 && <Heading level={2}>Also spotted nearby</Heading>}
       {undecided.map(area => (
