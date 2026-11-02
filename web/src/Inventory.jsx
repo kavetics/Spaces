@@ -3,6 +3,10 @@ import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Collapsible } from '@astryxdesign/core/Collapsible'
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
+import { Layout, LayoutContent } from '@astryxdesign/core/Layout'
+import { Switch } from '@astryxdesign/core/Switch'
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
@@ -12,43 +16,29 @@ import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
+import { cropItem } from './crop.js'
+import { decisionLabel, progress as itemProgress } from './itemFields.js'
 import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
+// Sharing with the Muse app works for one household, the owner's, so it's hidden unless a build turns it on.
+// Everything else in the app works for anyone without it.
+const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
 const NEARBY = 'nearby'
 const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
-const CROP_PX = 160 // crops are shown small, at twice their size for sharp phone screens
-const CROP_PADDING = 0.15 // a little of the surroundings makes an item easier to recognize
-const WIDE_PADDING = 1.5 // when the tight crop failed its check, show the item in context
-
-/** Cuts an item out of its photo. The box is in fractions of the photo. */
-async function cropItem(frame, { box, wide }) {
-  const bitmap = await createImageBitmap(frame)
-  const padding = wide ? WIDE_PADDING : CROP_PADDING
-  const padX = (box.x2 - box.x1) * padding
-  const padY = (box.y2 - box.y1) * padding
-  const x1 = Math.max(0, box.x1 - padX) * bitmap.width
-  const y1 = Math.max(0, box.y1 - padY) * bitmap.height
-  const x2 = Math.min(1, box.x2 + padX) * bitmap.width
-  const y2 = Math.min(1, box.y2 + padY) * bitmap.height
-  const scale = CROP_PX / Math.max(x2 - x1, y2 - y1)
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round((x2 - x1) * scale))
-  canvas.height = Math.max(1, Math.round((y2 - y1) * scale))
-  canvas.getContext('2d').drawImage(bitmap, x1, y1, x2 - x1, y2 - y1, 0, 0, canvas.width, canvas.height)
-  bitmap.close()
-  return canvas.toDataURL('image/jpeg', 0.8)
-}
-
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, shareError, hasOwnerKey, onShare }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [crops, setCrops] = useState({})
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
+  const [askKey, setAskKey] = useState(false)
+  const [typedKey, setTypedKey] = useState('')
+  const [sharing, setSharing] = useState(false)
+  const [shareProblem, setShareProblem] = useState(null)
 
   useEffect(() => {
     if (!result) return
@@ -76,10 +66,45 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         title={`Delete ${spaceName}?`}
         description="This removes its photos and item list from this phone. You can't undo this."
         actionLabel="Delete Space"
-        onAction={onDelete}
+        onAction={async () => {
+          try { await onDelete() } catch (err) {
+            setAskDelete(false)
+            setShareProblem(`Couldn't stop sharing, so nothing was deleted. ${err.message}`)
+          }
+        }}
       />
+      <Dialog isOpen={askKey} onOpenChange={setAskKey} purpose="form" width={420}>
+        <Layout
+          header={<DialogHeader title="Enter your owner key" onOpenChange={setAskKey} />}
+          content={
+            <LayoutContent>
+              <VStack gap={3}>
+                <Text as="p">Only someone with this key can share Spaces from this app. You only need to enter it once on this phone.</Text>
+                <TextInput label="Owner key" type="password" value={typedKey} onChange={setTypedKey} />
+                <Button label="Share" variant="primary" isDisabled={!typedKey.trim() || sharing} onClick={() => toggleShare(true, typedKey.trim())} />
+              </VStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
     </>
   )
+
+  async function toggleShare(on, key) {
+    if (on && !key && !hasOwnerKey) { setAskKey(true); return }
+    setSharing(true)
+    setShareProblem(null)
+    try {
+      await onShare(on, key)
+      setAskKey(false)
+      setTypedKey('')
+    } catch (err) {
+      if (err.wrongKey) setAskKey(true)
+      setShareProblem(err.message)
+    } finally {
+      setSharing(false)
+    }
+  }
 
   if (error) {
     return (
@@ -127,8 +152,10 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       key={item.id}
       align="start"
       label={<Text as="p">{item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}</Text>}
+      onClick={actionsBelow ? undefined : () => onOpenItem(item.id)}
       description={(
         <VStack gap={1}>
+          {decisionLabel(item.status) && <Text as="p" type="label">{statusLine(item)}</Text>}
           <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>
           {actionsBelow}
         </VStack>
@@ -160,9 +187,18 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
           <Button label="Rescan" size="sm" onClick={() => setAskRescan(true)} />
         </HStack>
+        {SHOW_SHARING && <Switch
+          label="Share with Muse"
+          description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Photos stay on this phone."
+          value={Boolean(space.shared)}
+          isDisabled={sharing}
+          onChange={on => toggleShare(on)}
+        />}
+        {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
       </VStack>
       {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some items may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
+      {inSpace.length > 0 && <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>}
       {inSpace.length > 0 && section(INVENTORY, `Digital inventory (${inSpace.length})`, (
         <VStack gap={3}>
           {CATEGORIES.map(([id, label]) => {
@@ -206,4 +242,15 @@ function progressText(progress, photos) {
   if (progress?.step === 'merging') return 'Checking for repeats across your photos…'
   if (progress?.step === 'photos') return `Looking through your photos: ${progress.done} of ${progress.total}`
   return photos === 1 ? 'Looking through your photo…' : 'Looking through your photos…'
+}
+
+function statusLine(item) {
+  const value = item.details?.askingPrice ?? item.details?.estimatedValue?.amount
+  const priced = item.status === 'sell' && value ? ` · $${value}${item.details?.askingPrice ? '' : ' AI estimate'}` : ''
+  return `${decisionLabel(item.status)}${priced}`
+}
+
+function progressLine({ decided, total, selling, value }) {
+  const sale = selling ? ` · ${selling} to sell${value ? `, about $${value}` : ''}` : ''
+  return `${decided} of ${total} decided${sale}`
 }

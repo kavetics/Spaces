@@ -292,3 +292,21 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** game screens, routes and scripts removed (old version at tag `room-rush-games`); `CLAUDE.md` and `AGENTS.md` now describe Spaces.
 - **Measured:** first fresh room: 13 of 13 items correct, none missed, 12 of 13 quantities right (a sconce counted 1, should be 2). One small room, counted by the owner.
 - **Next:** Muse app connection if available; otherwise sell listing.
+
+## 2026-11-02: Muse connector test
+- **Done:** connector live with the key active; Muse can create a custom connector from a key-based API.
+- **Learned:** the first Muse test failed because it was given the wrong host (room-rush.onrender.com, which isn't ours). The live address is room-rush-0ivl.onrender.com. Muse refused to guess when the call timed out.
+- **Decisions:** focus the story on decluttering with family decisions; real data for Muse comes from a per-Space "Share with Muse" with an owner key.
+- **Next:** retest Muse on the right host; Share with Muse on Supabase; decisions and progress.
+
+## 2026-11-02: Share with Muse
+- **Done:** per-Space "Share with Muse" switch; shared Spaces go to Supabase as item text, never photos; the Muse connector now reads only shared Spaces instead of sample data. Changes, rescans, unsharing and deleting keep Muse's copy current.
+- **Decisions:** without accounts, an owner key (separate from the connector key) is needed to share. The table has row level security and no policies, so only the server's secret key can reach it.
+- **Learned:** Supabase answers a minimal write with an empty body, which first looked like a failure.
+- **Next:** set Render keys, retest Muse with real data; decisions and progress.
+
+## 2026-11-02: Item details and decisions
+- **Done:** item page with keep, sell, donate or toss; progress per Space. Choosing sell asks for more photos, then AI fills listing details (brand only when readable, size, condition, rough dimensions, estimated value), all labeled as AI estimates. Private fields (purchase price and date, serial number) stay on the phone.
+- **Decisions:** details are only asked for items marked to sell, not during the scan, so scans stay fast. A field the person edits stops being labeled AI.
+- **Learned:** on real sofa photos the AI left brand empty (nothing readable) and estimated $350; it takes about 10 s.
+- **Next:** hide the Share with Muse switch for judges; listing draft; voice voting.

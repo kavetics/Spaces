@@ -2,9 +2,11 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { buildInventory, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
 import Inventory from './Inventory.jsx'
+import ItemDetail from './ItemDetail.jsx'
 import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
+import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { askMotionPermission } from './sweep.js'
 import Welcome from './Welcome.jsx'
 
@@ -16,13 +18,17 @@ export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
   const [openId, setOpenId] = useState(null)
+  const [openItemId, setOpenItemId] = useState(null)
   const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
   const [failed, setFailed] = useState({}) // id → why recognition stopped
   const [progress, setProgress] = useState(null)
   const running = useRef(null) // only one Space is recognized at a time, since each run costs money
+  const synced = useRef({}) // id → the item list the server last got, so unchanged Spaces aren't sent again
+  const [shareErrors, setShareErrors] = useState({}) // id → why keeping a shared Space up to date failed
   const fileInput = useRef(null)
 
   const open = spaces.find(s => s.id === openId)
+  const openItem = open?.result?.items.find(i => i.id === openItemId)
   const processing = spaces.some(s => !s.result && !failed[s.id])
 
   useEffect(() => {
@@ -57,6 +63,36 @@ export default function App() {
       .finally(() => { running.current = null })
   }, [spaces, failed])
 
+  // A shared Space follows its changes: removed items, added nearby ones, a finished rescan.
+  // Waits a moment so quick edits go as one update.
+  useEffect(() => {
+    const key = getOwnerKey()
+    const stale = spaces.filter(s => s.shared && s.result && synced.current[s.id] !== JSON.stringify(sharePayload(s)))
+    if (!key || !stale.length) return
+    const timer = setTimeout(() => stale.forEach(space => {
+      const sent = JSON.stringify(sharePayload(space))
+      shareSpace(space, key)
+        .then(() => { synced.current[space.id] = sent; setShareErrors(({ [space.id]: _, ...rest }) => rest) })
+        .catch(err => setShareErrors(e => ({ ...e, [space.id]: err.message })))
+    }), 800)
+    return () => clearTimeout(timer)
+  }, [spaces])
+
+  // Turning sharing on sends the list right away, so a wrong key or a server problem shows up here.
+  async function setSharing(space, on, typedKey) {
+    const key = typedKey ?? getOwnerKey()
+    if (on) {
+      await shareSpace(space, key)
+      synced.current[space.id] = JSON.stringify(sharePayload(space))
+    } else {
+      await unshareSpace(space.id, key)
+      delete synced.current[space.id]
+    }
+    if (typedKey) setOwnerKey(typedKey)
+    setShareErrors(({ [space.id]: _, ...rest }) => rest)
+    change(space.id, s => ({ ...s, shared: on }))
+  }
+
   function onPhotoFile(event) {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -72,6 +108,7 @@ export default function App() {
       frames,
       result: null,
       itemChoices: {},
+      shared: previous?.shared ?? false, // a rescan of a shared Space updates what Muse sees once it's ready
       createdAt: previous?.createdAt ?? Date.now(),
       savedAt: Date.now(),
     }
@@ -95,6 +132,14 @@ export default function App() {
     startScan(existing?.spaceName ?? name, existing?.id)
   }
 
+  // Decisions and sale details live on the item, with the time they last changed.
+  function updateItem(spaceId, itemId, patch) {
+    change(spaceId, s => ({
+      ...s,
+      result: { ...s.result, items: s.result.items.map(i => (i.id === itemId ? { ...i, ...patch, updatedAt: new Date().toISOString() } : i)) },
+    }))
+  }
+
   // Deletes the item and returns how to put it back. A rescan in between makes that do nothing.
   function removeItem(id, item) {
     const { savedAt, result } = spaces.find(s => s.id === id)
@@ -108,7 +153,9 @@ export default function App() {
     })
   }
 
+  // A shared Space comes off the server first, so deleting it here can't leave its items with Muse.
   async function onDelete() {
+    if (open.shared) await unshareSpace(open.id, getOwnerKey())
     await deleteSpace(open.id)
     deleteChat(open.id)
     const left = spaces.filter(s => s.id !== open.id)
@@ -173,6 +220,20 @@ export default function App() {
           onRescan={() => startScan(open.spaceName, open.id)}
           onBack={() => setScreen('spaces')}
           onAsk={() => setScreen('ask-space')}
+          onOpenItem={id => { setOpenItemId(id); setScreen('item') }}
+          shareError={shareErrors[open.id]}
+          hasOwnerKey={Boolean(getOwnerKey())}
+          onShare={(on, typedKey) => setSharing(open, on, typedKey)}
+        />
+      )}
+
+      {screen === 'item' && open && openItem && (
+        <ItemDetail
+          key={openItem.id}
+          space={open}
+          item={openItem}
+          onChange={patch => updateItem(open.id, openItem.id, patch)}
+          onBack={() => setScreen('space')}
         />
       )}
 

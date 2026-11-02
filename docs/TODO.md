@@ -23,6 +23,8 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] Let people correct item names and add items by hand
 - [ ] Store scans on the server (Supabase) for sharing and voting
 - [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
+- [x] Item details following the Muse schema; keep, sell, donate or toss; sell flow with AI-filled details
+- [x] Share with Muse: per-Space sharing to Supabase, read by the Muse connector
 - [x] Ask Muse in the app, with citations, for one Space or all Spaces
 - [ ] Let Ask Muse take actions, like removing an item or drafting a listing
 - [ ] Measure recognition on real scans against a hand-written answer key; results vary between runs

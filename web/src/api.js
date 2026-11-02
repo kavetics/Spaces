@@ -66,6 +66,19 @@ export async function askMuse({ scope, spaces, messages }) {
   }
 }
 
+// Details for an item someone is selling, read from the extra photos they took of it.
+export async function describeForSale(photos, item) {
+  const body = new FormData();
+  photos.forEach((p, i) => body.append('photos', p, `item-${i}.jpg`));
+  body.append('item', JSON.stringify({ name: item.name, description: item.description, category: item.category }));
+  try {
+    return await json(await fetch('/api/item-details', { method: 'POST', body, signal: AbortSignal.timeout(90000) }));
+  } catch (err) {
+    if (isConnectionError(err)) throw new Error("Couldn't reach the app. Check your connection and try again.");
+    throw err;
+  }
+}
+
 /** Shrink phone photos to 1280px before upload: faster upload and fewer AI tokens. */
 export async function shrinkPhoto(file, maxSide = 1280) {
   const bitmap = await createImageBitmap(file);

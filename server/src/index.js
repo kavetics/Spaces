@@ -6,6 +6,8 @@ import { toDataUrl } from './meta.js';
 import { buildInventory } from './inventory.js';
 import { askMuse } from './ask.js';
 import { connector } from './connector.js';
+import { shared } from './shared.js';
+import { describeForSale } from './itemDetails.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -16,6 +18,7 @@ app.use(cors());
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/connector/v1', connector);
+app.use('/api/shared', shared);
 
 // A whole home's inventory comes with each question, since it's stored on the phone.
 app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {
@@ -23,6 +26,15 @@ app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {
     const { scope, spaces, messages } = req.body ?? {};
     if (!Array.isArray(spaces) || !Array.isArray(messages) || !messages.length) throw Object.assign(new Error('Send spaces and messages.'), { status: 400 });
     res.json(await askMuse({ scope, spaces, messages }));
+  } catch (err) { next(err); }
+});
+
+// Details for an item someone is selling, from the extra photos they took of it.
+app.post('/api/item-details', upload.array('photos', 6), async (req, res, next) => {
+  try {
+    if (!req.files?.length) throw Object.assign(new Error('Attach photos of the item as "photos".'), { status: 400 });
+    const item = JSON.parse(req.body.item || '{}');
+    res.json(await describeForSale(req.files.map(f => toDataUrl(f.buffer, f.mimetype)), item));
   } catch (err) { next(err); }
 });
 

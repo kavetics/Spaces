@@ -10,6 +10,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SPACES_OWNER_KEY
+        sync: false # lets the owner's phone share Spaces; never commit it
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false # never commit it
       - key: SPACES_CONNECTOR_KEY
         sync: false # paste it in the Render dashboard; never commit it
       - key: MODEL_API_KEY

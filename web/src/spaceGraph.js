@@ -1,5 +1,6 @@
 // Links the home together: Space → area → category → item → the photo and spot it was seen in.
 // Ask Muse sends this as its context, and citations follow it back to the photo.
+import { shareableFields } from './itemFields.js'
 import { CATEGORIES, categoryOf, scannedDay, sortItems } from './spaceItems.js'
 
 function areaNode(items, startRef, name, nearby) {
@@ -22,7 +23,7 @@ export function buildGraph(spaces) {
     const itemNode = item => {
       const ref = `i${next++}`
       places[ref] = { spaceId: space.id, itemId: item.id, savedAt: space.savedAt, name: item.name }
-      return { ref, name: item.name, description: item.description, quantity: item.quantity, unsure: Boolean(item.needsReview) }
+      return { ref, name: item.name, description: item.description, quantity: item.quantity, unsure: Boolean(item.needsReview), ...shareableFields(item) }
     }
     const nearbyAreas = [...new Set(nearby.map(i => i.area))]
     return {
