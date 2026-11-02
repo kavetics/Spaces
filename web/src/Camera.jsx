@@ -149,13 +149,13 @@ export default function Camera({ title, hint, onCapture, onBack, onUpload, onTip
               icon={<Icon icon={scanning ? 'close' : 'chevronLeft'} />}
               onClick={scanning ? cancel : () => { stop(); onBack() }}
             />
-            <Text type="label">{scanning && live ? `${live.taken} of ${SCAN.sides} photos` : title}</Text>
+            <Text type="label" weight="semibold" className="space-scan-pill">{scanning && live ? `${live.taken} of ${SCAN.sides} photos` : title}</Text>
           </HStack>
         </VStack>
 
         <VStack gap={3} padding={6} hAlign="center" className="space-scan-bottom">
           {state !== 'starting' && state !== 'saving' && state !== 'error' && (
-            <Text as="p" justify="center" aria-live="polite">{scanning ? live?.guide : hint}</Text>
+            <Text as="p" type="large" weight="semibold" justify="center" className="space-scan-pill" aria-live="polite">{scanning ? live?.guide : hint}</Text>
           )}
           {state === 'error' && <Button label="Turn on camera" variant="primary" size="lg" onClick={retry} />}
           {state === 'ready' && <Button label="Start scan" variant="primary" size="lg" onClick={startScan} />}
@@ -173,9 +173,10 @@ function Reticle({ live }) {
   const { offset, aligned, hold, compass } = live
   return (
     <svg className="space-scan-reticle" viewBox="-160 -160 320 320" aria-hidden="true">
+      <circle r="42" className="space-scan-edge" />
       <circle r="42" className={`space-scan-ring ${aligned ? 'is-aligned' : ''}`} />
       <circle r="42" className="space-scan-hold" pathLength="1" strokeDasharray={`${hold} 1`} />
-      {compass && <circle r="11" className="space-scan-dot" style={{ transform: `translateX(${offset}px)` }} />}
+      {compass && <circle r="12" className="space-scan-dot" style={{ transform: `translateX(${offset}px)` }} />}
     </svg>
   )
 }
