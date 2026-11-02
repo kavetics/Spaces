@@ -19,10 +19,12 @@
 }
 .ask-muse-input {
   flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-2);
   padding: var(--spacing-3) var(--spacing-4) max(env(safe-area-inset-bottom), var(--spacing-3));
 }
-.ask-muse-input > * { width: 100%; }
-.ask-muse-field { flex: 1; min-width: 0; }
+.ask-muse-input > :first-child { flex: 1; min-width: 0; }
 
 .citation {
   padding: 0;

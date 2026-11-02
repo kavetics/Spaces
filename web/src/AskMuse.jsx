@@ -159,10 +159,8 @@ export default function AskMuse({ spaces, space, onBack }) {
       </VStack>
 
       <form className="ask-muse-input" onSubmit={e => { e.preventDefault(); send(draft) }}>
-        <HStack gap={2} vAlign="end">
-          <TextInput label="Your question" isLabelHidden placeholder="Ask about your things" value={draft} onChange={setDraft} className="ask-muse-field" />
-          <Button label="Send" type="submit" variant="primary" isDisabled={!draft.trim() || waiting} />
-        </HStack>
+        <TextInput label="Your question" isLabelHidden placeholder="Ask about your things" value={draft} onChange={setDraft} />
+        <Button label="Send" type="submit" variant="primary" isDisabled={!draft.trim() || waiting} />
       </form>
 
       {cited && <Citation cited={cited} onClose={() => setCited(null)} />}

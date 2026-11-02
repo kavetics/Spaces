@@ -152,7 +152,10 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
     <VStack gap={4} padding={4} className="inventory">
       <HStack>{backButton}</HStack>
       <VStack gap={1}>
-        <Heading level={1}>{spaceName}</Heading>
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Heading level={1}>{spaceName}</Heading>
+          <Button label="Delete Space" variant="ghost" size="sm" onClick={() => setAskDelete(true)} />
+        </HStack>
         <HStack gap={2} vAlign="center" hAlign="between">
           <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
           <Button label="Rescan" size="sm" onClick={() => setAskRescan(true)} />
@@ -193,7 +196,6 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       ))}
 
       <Button label={`Ask Muse about ${spaceName}`} variant="primary" size="lg" onClick={onAsk} />
-      <Button label="Delete Space" variant="ghost" onClick={() => setAskDelete(true)} />
       {dialogs}
     </VStack>
   )
