@@ -40,9 +40,9 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
       <List hasDividers edge="flush">
         {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
       </List>
-      <Button label="Scan another Space" variant="primary" size="lg" isDisabled={processing} onClick={onScanAnother} />
+      <Button label="Scan another Space" size="lg" isDisabled={processing} onClick={onScanAnother} />
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
-      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" size="lg" onClick={onAsk} />}
+      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}
     </VStack>
   )
 }
