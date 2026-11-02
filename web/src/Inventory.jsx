@@ -4,7 +4,6 @@ import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { Heading } from '@astryxdesign/core/Heading'
-import { HStack } from '@astryxdesign/core/HStack'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
@@ -70,8 +69,8 @@ function recognize(frames, space, onProgress) {
 const scannedAt = ms => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 /** Shows what's in the room, running recognition first if this scan doesn't have results yet. */
-export default function Inventory({ scan, onResult, onAreaChoice, onDelete, onScanAgain }) {
-  const { frames, spaceName, result, areaChoices = {}, savedAt } = scan
+export default function Inventory({ scan, onResult, onItemChoice, onDelete, onScanAgain }) {
+  const { frames, spaceName, result, areaChoices = {}, itemChoices = {}, savedAt } = scan
   const [progress, setProgress] = useState(null)
   const [crops, setCrops] = useState({})
   const [error, setError] = useState(null)
@@ -130,16 +129,19 @@ export default function Inventory({ scan, onResult, onAreaChoice, onDelete, onSc
   const unread = warnings.failedPhotos.length
   // Scans saved before Spaces had names have no area on their items, so those all count as in the Space.
   const isNearby = item => item.inSpace === false
-  const areas = [...new Set(items.filter(isNearby).map(i => i.area))]
-  const inSpace = items.filter(i => !isNearby(i) || areaChoices[i.area] === 'add')
-  const undecided = areas.filter(a => !areaChoices[a])
-  const leftOut = areas.filter(a => areaChoices[a] === 'leave')
-  const row = item => (
+  // Scans saved when choices were per area keep those choices until an item is changed.
+  const choiceFor = item => itemChoices[item.id] ?? areaChoices[item.area]
+  const inSpace = items.filter(i => choiceFor(i) === 'add' || (!isNearby(i) && choiceFor(i) !== 'leave'))
+  const leftOut = items.filter(i => choiceFor(i) === 'leave')
+  const nearby = items.filter(i => isNearby(i) && !choiceFor(i))
+  const areas = [...new Set(nearby.map(i => i.area))]
+  const row = (item, action, choice) => (
     <ListItem
       key={item.id}
       label={item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}
       description={item.needsReview ? `Not sure. ${item.description}` : item.description}
       startContent={crops[item.id] ? <img className="inventory-crop" src={crops[item.id]} alt="" /> : <span className="inventory-crop" />}
+      endContent={<Button label={action} aria-label={`${action}: ${item.name}`} size="sm" variant="ghost" onClick={() => onItemChoice(item.id, choice)} />}
     />
   )
   return (
@@ -158,29 +160,25 @@ export default function Inventory({ scan, onResult, onAreaChoice, onDelete, onSc
         return (
           <VStack key={id} gap={2}>
             <Heading level={2}>{label} ({inCategory.length})</Heading>
-            <List hasDividers edge="flush">{[...sure, ...unsure].map(row)}</List>
+            <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, 'Leave out', 'leave'))}</List>
           </VStack>
         )
       })}
 
-      {undecided.length > 0 && <Heading level={2}>Also spotted nearby</Heading>}
-      {undecided.map(area => (
+      {areas.length > 0 && <Heading level={2}>Also spotted nearby</Heading>}
+      {areas.map(area => (
         <VStack key={area} gap={2}>
           <Heading level={3}>{area}</Heading>
-          <List hasDividers edge="flush">{items.filter(i => isNearby(i) && i.area === area).map(row)}</List>
-          <HStack gap={2}>
-            <Button label="Add to this Space" onClick={() => onAreaChoice(area, 'add')} />
-            <Button label="Leave out" variant="ghost" onClick={() => onAreaChoice(area, 'leave')} />
-          </HStack>
+          <List hasDividers edge="flush">{nearby.filter(i => i.area === area).map(i => row(i, 'Add', 'add'))}</List>
         </VStack>
       ))}
 
-      {leftOut.map(area => (
-        <HStack key={area} gap={2} vAlign="center" hAlign="between">
-          <Text color="secondary">Left out: {area}</Text>
-          <Button label={`Add ${area} back`} variant="ghost" size="sm" onClick={() => onAreaChoice(area, 'add')} />
-        </HStack>
-      ))}
+      {leftOut.length > 0 && (
+        <VStack gap={2}>
+          <Heading level={2}>Left out ({leftOut.length})</Heading>
+          <List hasDividers edge="flush">{leftOut.map(i => row(i, 'Add back', 'add'))}</List>
+        </VStack>
+      )}
 
       <Button label="Scan again" onClick={onScanAgain} />
       <Button label="Delete this scan" variant="ghost" onClick={() => setAskDelete(true)} />

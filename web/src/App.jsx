@@ -54,7 +54,7 @@ function TestMenu() {
 
 function Game() {
   const [screen, setScreen] = useState(null) // null while checking for a saved scan, then home → space → scan → inventory
-  const [scan, setScan] = useState(null) // { frames, spaceName, result, areaChoices, savedAt }
+  const [scan, setScan] = useState(null) // { frames, spaceName, result, itemChoices, savedAt }
   const [spaceName, setSpaceName] = useState('')
   const fileInput = useRef(null)
 
@@ -77,7 +77,7 @@ function Game() {
 
   // Save before recognition starts, so a phone going to sleep can't lose the photos.
   function onScan({ frames }) {
-    const fresh = { frames, spaceName, result: null, areaChoices: {}, savedAt: Date.now() }
+    const fresh = { frames, spaceName, result: null, itemChoices: {}, savedAt: Date.now() }
     setScan(fresh)
     saveScan(fresh)
     setScreen('inventory')
@@ -91,10 +91,10 @@ function Game() {
     })
   }
 
-  // Keep or leave out everything nearby in one area, and remember the choice.
-  function onAreaChoice(area, choice) {
+  // Add a nearby item or leave one out, and remember the choice.
+  function onItemChoice(id, choice) {
     setScan(current => {
-      const next = { ...current, areaChoices: { ...current.areaChoices, [area]: choice } }
+      const next = { ...current, itemChoices: { ...current.itemChoices, [id]: choice } }
       saveScan(next)
       return next
     })
@@ -134,7 +134,7 @@ function Game() {
         </Suspense>
       )}
 
-      {screen === 'inventory' && <Inventory scan={scan} onResult={onResult} onAreaChoice={onAreaChoice} onDelete={onDelete} onScanAgain={() => setScreen('space')} />}
+      {screen === 'inventory' && <Inventory scan={scan} onResult={onResult} onItemChoice={onItemChoice} onDelete={onDelete} onScanAgain={() => setScreen('space')} />}
     </>
   )
 }
