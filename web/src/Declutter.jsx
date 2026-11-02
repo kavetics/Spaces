@@ -25,6 +25,12 @@ function buildStack(spaces) {
     .map(item => ({ spaceId: space.id, itemId: item.id })))
 }
 
+/** The Spaces a session covers, in the order it goes through them. Deleted Spaces are left out. */
+function spacesIn(stack, spaces) {
+  const names = [...new Set(stack.map(s => s.spaceId))].map(id => spaces.find(s => s.id === id)?.spaceName).filter(Boolean)
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? ''
+}
+
 function Pick({ spaces, saved, onStart, onResume, onCancel }) {
   const ready = spaces.filter(s => s.result)
   const [chosen, setChosen] = useState(() => new Set(ready.map(s => s.id)))
@@ -37,6 +43,7 @@ function Pick({ spaces, saved, onStart, onResume, onCancel }) {
       {saved && (
         <VStack gap={2} className="declutter-resume">
           <Heading level={2}>Pick up where you left off</Heading>
+          <Text as="p" type="label">{spacesIn(saved.stack, spaces)}</Text>
           <Text as="p" color="secondary">You stopped at {saved.place + 1} of {saved.stack.length} · {saved.stack.length - saved.place} left.</Text>
           <ProgressBar label="Items gone through" isLabelHidden value={saved.place} max={saved.stack.length} />
           <Button label="Resume" variant="primary" size="lg" onClick={onResume} />
