@@ -1,0 +1,11 @@
+.inventory, .inventory-center { position: fixed; inset: 0; overflow-y: auto; background: var(--color-background-body); }
+.inventory-crop {
+  display: block;
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-background-muted);
+}
+.space-picker { width: 100%; max-width: 28rem; }

@@ -4,9 +4,9 @@ Things Room Rush could do beyond the hackathon demo. These are **not built**; th
 
 ## Who it's for
 Room Rush brings people together with just a phone, wherever they are.
-- **Seniors in care communities (first focus).** Group activity time, standing or seated. To be shaped with activities directors. No health claims.
 - **Friends and strangers at parties.** Where this started, and where it has been tested.
 - **Grandparents and grandkids.** Family visits where everyone can play, with family supervising.
+- **Seniors in care communities (future application).** Group activity time, using the seated modes. To be shaped with activities directors first. No health claims.
 - **Schools and childcare (much later, if at all).** Only after child-safety, privacy and legal review. Nothing is built or filmed for children today.
 
 ## Games

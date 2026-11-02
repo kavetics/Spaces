@@ -17,6 +17,11 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] Test the camera on iPhone
 
 ## Backlog (in order, after the in-app camera works)
+- [ ] UI optimizations: make the scanner's text and white dot easier to see against bright rooms (hard to read in the iPhone test)
+- [x] Keep the latest scan on the phone through sleep and reloads
+- [ ] Save more than one scan, per Space, and let people correct items
+- [ ] Store scans on the server (Supabase) for sharing and voting
+- [ ] Measure recognition on real scans against a hand-written answer key; results vary between runs
 - [x] ⑦ Referee mode: record a turn with sound (hold, or solo countdown), player x of y
 - [x] Catch judge: SAM follows the ball, Muse Spark rules caught, dropped or unclear
 - [x] Catch accuracy test: 20 of 20 (one player, one room)
@@ -36,7 +41,7 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] **Before public launch:** stop saving video and sound, and restore the consent line "Room Rush doesn't save them." Today this is automatic: recording runs only on the dev Mac, and the hosted app already shows the original line.
 - [x] Referee phases, SAM once per turn, VAR on the results screen
 - [x] Seated options for both games (balloon; clues within reach)
-- [ ] Talk to a senior community activities director; test seated mode with real players
+- [ ] Later, not for this submission: talk to a senior community activities director; test seated mode with real players
 - [ ] Metrics: anonymous game events in Supabase, 👍/👎 on referee calls and clap counts, `npm run metrics` summary. Numbers only: no videos, sound, names or IP addresses. Add a line to the consent screen.
 
 ## Weekend (Sat Oct 31 – Sun Nov 1)

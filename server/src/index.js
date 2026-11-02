@@ -9,6 +9,7 @@ import { startScan, getScan, answerPlayers, getRounds, getRound, roomReport } fr
 import { judgeFind, writeClues } from './scavenger.js';
 import { refereeRound } from './roundReferee.js';
 import { lookAtFrame } from './look.js';
+import { buildInventory } from './inventory.js';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { refereeCatch } from './catchReferee.js';
@@ -110,6 +111,32 @@ app.post('/api/clap-catch/referee', upload.array('frames', 70), async (req, res,
     const send = line => res.write(`${JSON.stringify(line)}\n`);
     try {
       const result = await refereeCatch(req.files.map((f, i) => ({ t: times[i], dataUrl: toDataUrl(f.buffer, f.mimetype) })), { envelope, onProgress: send, review: req.body.review === 'true' });
+      send({ step: 'done', result });
+    } catch (err) {
+      console.error(err);
+      send({ step: 'error', error: err.message });
+    }
+    res.end();
+  } catch (err) { next(err); }
+});
+
+// A scan's photos become an inventory. One JSON line per step, since this takes a while.
+app.post('/api/inventory', upload.array('frames', 10), async (req, res, next) => {
+  try {
+    if (!req.files?.length) throw Object.assign(new Error('Attach the scan as "frames".'), { status: 400 });
+    // Development only: keep the photos, so recognition can be measured and tuned on real scans.
+    if (process.env.NODE_ENV !== 'production') {
+      const folder = new URL(`../../test-photos/scans/${new Date().toISOString().replace(/[:.]/g, '-')}/`, import.meta.url).pathname;
+      await mkdir(folder, { recursive: true });
+      await Promise.all(req.files.map((f, i) => writeFile(join(folder, `photo-${i}.jpg`), f.buffer)));
+    }
+    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.flushHeaders();
+    const send = line => res.write(`${JSON.stringify(line)}\n`);
+    try {
+      const space = String(req.body.space || 'room').trim().slice(0, 40) || 'room';
+      const result = await buildInventory(req.files.map(f => toDataUrl(f.buffer, f.mimetype)), { space, onProgress: send });
       send({ step: 'done', result });
     } catch (err) {
       console.error(err);

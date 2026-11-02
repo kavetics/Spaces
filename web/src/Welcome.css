@@ -1,0 +1,28 @@
+/* Astryx has no animation for this, so the keyframes live here. Colors and timing use its tokens. */
+.welcome {
+  position: fixed;
+  inset: 0;
+  background: var(--color-background-body);
+}
+
+.welcome-scan { width: min(56vw, 14rem); }
+.welcome-scan-ring { fill: none; stroke: var(--color-border-emphasized); stroke-width: 0.5; }
+.welcome-scan-sweep {
+  transform-origin: 50px 50px;
+  animation: welcome-sweep var(--duration-slow-max) linear infinite;
+}
+.welcome-scan-sweep line { stroke: var(--color-accent); stroke-width: 1; stroke-linecap: round; }
+.welcome-scan-sweep circle { fill: var(--color-accent); }
+
+.welcome-title { animation: welcome-fade var(--duration-slow) var(--ease-standard) both; }
+.welcome-button { animation: welcome-pop var(--duration-medium) var(--ease-standard) both; }
+
+@keyframes welcome-sweep { to { transform: rotate(360deg); } }
+@keyframes welcome-fade { from { opacity: 0; } }
+@keyframes welcome-pop { from { opacity: 0; transform: scale(0.8); } }
+
+/* Near zero, not none: the button waits for the title's animation to end. */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-title, .welcome-button { animation-duration: 0.01ms; }
+  .welcome-scan-sweep { animation-duration: 6s; }
+}

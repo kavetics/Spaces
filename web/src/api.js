@@ -37,6 +37,47 @@ const SAVE_LIMIT_MS = 45000;
 /** Connection trouble, as opposed to the server answering with an error: worth sending again. */
 export const isConnectionError = err => err.name === 'TypeError' || err.name === 'AbortError' || err.name === 'TimeoutError';
 
+// A scan's photos become an inventory. Silence for this long means the phone dropped off or the work hung.
+const INVENTORY_SILENCE_MS = 90000;
+export async function buildInventory(frames, space, onProgress = () => {}) {
+  const body = new FormData();
+  if (space) body.append('space', space);
+  frames.forEach((f, i) => body.append('frames', f, `room-${i}.jpg`));
+  const controller = new AbortController();
+  let silence;
+  const stillAlive = () => {
+    clearTimeout(silence);
+    silence = setTimeout(() => controller.abort(), INVENTORY_SILENCE_MS);
+  };
+  stillAlive();
+  try {
+    const res = await fetch('/api/inventory', { method: 'POST', body, signal: controller.signal });
+    stillAlive();
+    if (!res.ok) return await json(res); // throws with the server's message
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      stillAlive();
+      if (done) throw new Error('The connection ended before the inventory finished.');
+      buffer += value;
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines.filter(Boolean)) {
+        const event = JSON.parse(line);
+        if (event.step === 'error') throw new Error(event.error);
+        if (event.step === 'done') return event.result;
+        onProgress(event);
+      }
+    }
+  } catch (err) {
+    if (isConnectionError(err)) throw new Error("Couldn't reach the app. Check your connection and try again.");
+    throw err;
+  } finally {
+    clearTimeout(silence);
+  }
+}
+
 // Clap Catch: one recorded turn, as frames with their times.
 export async function refereeCatch(frames, envelope, onProgress = () => {}, { review = false } = {}) {
   const body = new FormData();

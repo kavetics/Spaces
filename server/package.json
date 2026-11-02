@@ -10,11 +10,13 @@
     "test:referee": "node --env-file=../.env scripts/test-referee.js",
     "test:scan": "node --env-file=../.env scripts/test-scan.js",
     "test:catch": "node --env-file=../.env scripts/test-catch.js",
+    "test:inventory": "node --env-file=../.env scripts/test-inventory.js",
     "review": "node --env-file=../.env scripts/review.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.3.0",
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "sharp": "^0.35.5"
   }
 }

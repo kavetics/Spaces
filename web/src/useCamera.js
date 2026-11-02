@@ -243,7 +243,7 @@ export function say(text) {
 
 function cameraError(err) {
   if (err.message === 'insecure') return 'The camera needs the secure link (https://). Check the address and try again.'
-  if (err.name === 'NotAllowedError') return 'The camera was blocked. Tap below and choose Allow. If it stays blocked, allow Camera and Microphone in iPhone Settings → Apps → your browser.'
+  if (err.name === 'NotAllowedError') return 'The camera was blocked. Tap below and choose Allow. If it stays blocked, allow access in iPhone Settings → Apps → your browser.'
   if (err.name === 'NotFoundError') return 'No camera found on this device.'
   return `Could not start the camera (${err.name || err.message}).`
 }

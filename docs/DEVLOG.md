@@ -248,3 +248,22 @@ Makes the scan matter: Muse Spark writes clues from what the scan verified in th
 
 ### Direction: seniors, standing or seated
 Owner's direction, personal to them: Room Rush for group activity time in senior communities, for camaraderie and entertainment. No health claims. Setup now asks Standing/Walking or Seated. Seated Clap Catch uses a balloon with an 8 s turn; seated Scavenger clues are solved with what's worn or within reach (15 s). Standing modes are unchanged, for active players. Not yet tested with a balloon or with seniors; talk to an activities director first.
+
+- Senior communities moved to a future application, after the owner spoke with someone who has volunteered extensively at one. Seated modes stay in the app.
+
+## 2026-11-01: Pivot to Spaces, recognition
+- **Done:** Astryx design system, welcome screen with consent, simplified scanner (8 photos, no ceiling), inventory from a scan.
+- **Decisions:** Spark points at each item and SAM only sharpens the outline, because SAM finds every match for a word and gave "10× wall art". Plain code does matching, merge rules and quantities. Doubtful items stay, marked "Not sure", because the crop check also failed real small items.
+- **Learned:** results vary between runs on the same photos, and small, distant items are the weak spot. Merging worked on overlapping crops; not yet tried on a real 8-photo scan.
+- **Next:** scan real rooms, score against an answer key, then save and correct items.
+
+## 2026-11-01: Recognition fixes from the first real scan
+- **Done:** latest scan stays on the phone; clutter skipped in prompt and code; repeats fixed; every item has a picture.
+- **Decisions:** neighbouring photos barely overlap, so big items are cut in half with different names. Code now flags items cut at touching edges as hints for Spark, and allows merges along a chain of photos.
+- **Learned:** rug and all three sofas came out right in 2 of 2 reruns on the same scan (these fixes were tuned on it, so a fresh room still needs testing). A scan takes about 90 to 110 s, and merging is over half of that.
+- **Next:** score a fresh scan; speed up merging.
+
+## 2026-11-01: Spaces have names and boundaries
+- **Done:** name the Space before scanning; Spark marks what's in it and which area everything else is in; "Also spotted nearby" with add or leave out, saved on the phone.
+- **Decisions:** labels instead of an entrance photo, because an open plan has no doorway to mark the edge. The person has the final say, and nothing nearby silently disappears.
+- **Next:** test on a fresh room; speed up merging.

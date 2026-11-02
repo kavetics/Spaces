@@ -1,12 +1,11 @@
 // Guided room scan helpers: which way the camera points, so the app can guide the host
-// to 8 directions plus the ceiling and take each photo when the phone is lined up and still.
+// to 8 directions and take each photo when the phone is lined up and still.
 
 export const SCAN = {
   sides: 8, // one photo every 45°, all the way around
   stepDeg: 45,
   alignDeg: 10, // close enough to the target direction
-  levelDeg: 35, // side photos: camera roughly level, not at the floor or ceiling
-  ceilingDeg: 30, // ceiling photo: camera tilted up at least this much (the frame's top edge is then ~60° up)
+  levelDeg: 35, // camera roughly level, not at the floor or ceiling
   steadySpreadDeg: 5, // "still" = the phone moved less than this…
   steadyWindowMs: 300, // …over this long
   steadyMs: 400, // hold still this long before the photo is taken
