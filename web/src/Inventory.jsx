@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
+import { Collapsible } from '@astryxdesign/core/Collapsible'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
@@ -9,10 +10,13 @@ import { IconButton } from '@astryxdesign/core/IconButton'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
+import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
+const NEARBY = 'nearby'
+const UNDO_MS = 6000
 const CROP_PX = 160 // crops are shown small, at twice their size for sharp phone screens
 const CROP_PADDING = 0.15 // a little of the surroundings makes an item easier to recognize
 const WIDE_PADDING = 1.5 // when the tight crop failed its check, show the item in context
@@ -55,8 +59,9 @@ const categoryOf = item => {
 }
 
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onDelete, onRescan, onBack }) {
-  const { frames, spaceName, result, savedAt } = space
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack }) {
+  const { frames, spaceName, result, savedAt, openSections = {} } = space
+  const toast = useToast()
   const [crops, setCrops] = useState({})
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
@@ -76,7 +81,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         isOpen={askRescan}
         onOpenChange={setAskRescan}
         title={`Rescan ${spaceName}?`}
-        description="Your new scan replaces these photos and this item list, including what you added or left out."
+        description="Your new scan replaces these photos and this item list, including what you added or removed."
         actionLabel="Rescan"
         actionVariant="primary"
         onAction={() => { setAskRescan(false); onRescan() }}
@@ -124,16 +129,40 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
 
   const { items, warnings } = result
   const unread = warnings.failedPhotos.length
-  const { inSpace, leftOut, nearby } = sortItems(space)
+  const { inSpace, nearby } = sortItems(space)
   const areas = [...new Set(nearby.map(i => i.area))]
-  const row = (item, action, choice) => (
+  // Removing is immediate and real, so a mis-tap gets a few seconds to take it back.
+  function remove(item) {
+    const undo = onRemoveItem(item)
+    const dismiss = toast({ body: `Removed ${item.name}`, autoHideDuration: UNDO_MS, endContent: <Button label="Undo" size="sm" onClick={() => { undo(); dismiss() }} /> })
+  }
+  const action = (item, label, onClick) => <Button label={label} aria-label={`${label}: ${item.name}`} size="sm" variant="ghost" onClick={onClick} />
+  // Full names and descriptions wrap instead of being cut off. Actions under the text leave them room.
+  const row = (item, sideAction, actionsBelow) => (
     <ListItem
       key={item.id}
-      label={item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}
-      description={item.needsReview ? `Not sure. ${item.description}` : item.description}
+      align="start"
+      label={<Text as="p">{item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}</Text>}
+      description={(
+        <VStack gap={1}>
+          <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>
+          {actionsBelow}
+        </VStack>
+      )}
       startContent={crops[item.id] ? <img className="inventory-crop" src={crops[item.id]} alt="" /> : <span className="inventory-crop" />}
-      endContent={<Button label={action} aria-label={`${action}: ${item.name}`} size="sm" variant="ghost" onClick={() => onItemChoice(item.id, choice)} />}
+      endContent={sideAction}
     />
+  )
+  // Sections stay as they were left. Nearby starts closed, because it's what clutters the page most.
+  const section = (key, title, children) => (
+    <Collapsible
+      key={key}
+      isOpen={openSections[key] ?? key !== NEARBY}
+      onOpenChange={open => onSectionToggle(key, open)}
+      trigger={<Heading level={2}>{title}</Heading>}
+    >
+      {children}
+    </Collapsible>
   )
   return (
     <VStack gap={4} padding={4} className="inventory">
@@ -150,27 +179,29 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         const sure = inCategory.filter(i => !i.needsReview)
         const unsure = inCategory.filter(i => i.needsReview)
         return (
-          <VStack key={id} gap={2}>
-            <Heading level={2}>{label} ({inCategory.length})</Heading>
-            <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, 'Leave out', 'leave'))}</List>
-          </VStack>
+          section(id, `${label} (${inCategory.length})`, (
+            <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
+          ))
         )
       })}
 
-      {areas.length > 0 && <Heading level={2}>Also spotted nearby</Heading>}
-      {areas.map(area => (
-        <VStack key={area} gap={2}>
-          <Heading level={3}>{area}</Heading>
-          <List hasDividers edge="flush">{nearby.filter(i => i.area === area).map(i => row(i, 'Add', 'add'))}</List>
+      {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
+        <VStack gap={3}>
+          {areas.map(area => (
+            <VStack key={area} gap={2}>
+              <Heading level={3}>{area}</Heading>
+              <List hasDividers edge="flush">
+                {nearby.filter(i => i.area === area).map(i => row(i, null, (
+                  <HStack gap={1}>
+                    {action(i, 'Add', () => onItemChoice(i.id, 'add'))}
+                    {action(i, 'Remove', () => remove(i))}
+                  </HStack>
+                )))}
+              </List>
+            </VStack>
+          ))}
         </VStack>
       ))}
-
-      {leftOut.length > 0 && (
-        <VStack gap={2}>
-          <Heading level={2}>Left out ({leftOut.length})</Heading>
-          <List hasDividers edge="flush">{leftOut.map(i => row(i, 'Add back', 'add'))}</List>
-        </VStack>
-      )}
 
       <Button label="Rescan" onClick={() => setAskRescan(true)} />
       <Button label="Delete Space" variant="ghost" onClick={() => setAskDelete(true)} />

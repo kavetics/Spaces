@@ -1,4 +1,4 @@
-// Which of a Space's items count as in it, nearby or left out, after the person's choices.
+// Which of a Space's items count as in it or nearby, after the person's choices.
 export function sortItems({ result, itemChoices = {}, areaChoices = {} }) {
   // Scans saved when choices were per area keep those choices until an item is changed.
   const choiceFor = item => itemChoices[item.id] ?? areaChoices[item.area]
@@ -6,8 +6,8 @@ export function sortItems({ result, itemChoices = {}, areaChoices = {} }) {
   const isNearby = item => item.inSpace === false
   const items = result?.items ?? []
   return {
+    // Scans saved when items could be left out and brought back may still have 'leave' choices, which stay hidden.
     inSpace: items.filter(i => choiceFor(i) === 'add' || (!isNearby(i) && choiceFor(i) !== 'leave')),
-    leftOut: items.filter(i => choiceFor(i) === 'leave'),
     nearby: items.filter(i => isNearby(i) && !choiceFor(i)),
   }
 }

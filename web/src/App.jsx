@@ -135,6 +135,19 @@ function Game() {
     startScan(existing?.spaceName ?? name, existing?.id)
   }
 
+  // Deletes the item and returns how to put it back. A rescan in between makes that do nothing.
+  function removeItem(id, item) {
+    const { savedAt, result } = spaces.find(s => s.id === id)
+    const position = result.items.findIndex(i => i.id === item.id)
+    change(id, s => ({ ...s, result: { ...s.result, items: s.result.items.filter(i => i.id !== item.id) } }))
+    return () => change(id, s => {
+      if (s.savedAt !== savedAt || s.result?.items.some(i => i.id === item.id)) return s
+      const items = [...s.result.items]
+      items.splice(position, 0, item)
+      return { ...s, result: { ...s.result, items } }
+    })
+  }
+
   async function onDelete() {
     await deleteSpace(open.id)
     const left = spaces.filter(s => s.id !== open.id)
@@ -192,6 +205,8 @@ function Game() {
           error={failed[open.id]}
           onRetry={() => setFailed(({ [open.id]: _, ...rest }) => rest)}
           onItemChoice={(item, choice) => change(open.id, s => ({ ...s, itemChoices: { ...s.itemChoices, [item]: choice } }))}
+          onRemoveItem={item => removeItem(open.id, item)}
+          onSectionToggle={(key, isOpen) => change(open.id, s => ({ ...s, openSections: { ...s.openSections, [key]: isOpen } }))}
           onDelete={onDelete}
           onRescan={() => startScan(open.spaceName, open.id)}
           onBack={() => setScreen('spaces')}

@@ -277,3 +277,7 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** one record per Space on the phone, a page listing them, scan another room, rescan, delete. Existing scans convert automatically. Per-item add and leave out.
 - **Decisions:** recognition runs outside the results screen so it continues while people look elsewhere, one Space at a time because each run costs money.
 - **Next:** test on a phone; item corrections.
+
+## 2026-11-01: Cleaner item lists
+- **Done:** removed items are deleted right away with a few seconds of Undo; categories and the nearby section collapse and stay as left.
+- **Next:** a rescan can bring removed items back, since matching items between scans isn't built.
