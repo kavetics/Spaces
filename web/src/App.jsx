@@ -7,6 +7,7 @@ import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js
 import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
+import { categoryOf } from './spaceItems.js'
 import { askMotionPermission } from './sweep.js'
 import Welcome from './Welcome.jsx'
 
@@ -19,6 +20,7 @@ export default function App() {
   const [spaces, setSpaces] = useState([])
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
+  const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
   const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
   const [failed, setFailed] = useState({}) // id → why recognition stopped
   const [progress, setProgress] = useState(null)
@@ -221,6 +223,8 @@ export default function App() {
           onBack={() => setScreen('spaces')}
           onAsk={() => setScreen('ask-space')}
           onOpenItem={id => { setOpenItemId(id); setScreen('item') }}
+          focusItem={focusItem}
+          onFocused={() => setFocusItem(null)}
           shareError={shareErrors[open.id]}
           hasOwnerKey={Boolean(getOwnerKey())}
           onShare={(on, typedKey) => setSharing(open, on, typedKey)}
@@ -234,6 +238,12 @@ export default function App() {
           item={openItem}
           onChange={patch => updateItem(open.id, openItem.id, patch)}
           onBack={() => setScreen('space')}
+          onSave={() => {
+            // Back to the item in its list, with its sections open so the change is in view.
+            change(open.id, s => ({ ...s, openSections: { ...s.openSections, inventory: true, [categoryOf(openItem)]: true } }))
+            setFocusItem(openItem.id)
+            setScreen('space')
+          }}
         />
       )}
 

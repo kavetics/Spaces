@@ -11,10 +11,11 @@ import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/Segme
 import { Text } from '@astryxdesign/core/Text'
 import { TextArea } from '@astryxdesign/core/TextArea'
 import { TextInput } from '@astryxdesign/core/TextInput'
+import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { describeForSale, shrinkPhoto } from './api.js'
 import { cropItem } from './crop.js'
-import { CONDITIONS, DECISIONS, LISTING, editDetail, mergeAiDetails } from './itemFields.js'
+import { CONDITIONS, DECISIONS, LISTING, decisionOf, editDetail, mergeAiDetails } from './itemFields.js'
 import { categoryOf, CATEGORIES } from './spaceItems.js'
 import './Inventory.css'
 
@@ -37,7 +38,7 @@ function Thumbnail({ blob, onRemove }) {
 }
 
 /** One item: its decision, and when it's for sale, the photos and details a listing needs. */
-export default function ItemDetail({ space, item, onChange, onBack }) {
+export default function ItemDetail({ space, item, onChange, onBack, onSave }) {
   const details = item.details ?? {}
   const ai = new Set(details.aiFields ?? [])
   const salePhotos = item.salePhotos ?? []
@@ -45,6 +46,7 @@ export default function ItemDetail({ space, item, onChange, onBack }) {
   const [filling, setFilling] = useState(false)
   const [fillError, setFillError] = useState(null)
   const fileInput = useRef(null)
+  const toast = useToast()
   const category = CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export default function ItemDetail({ space, item, onChange, onBack }) {
 
       <VStack gap={2}>
         <Heading level={2}>What should happen to it?</Heading>
-        <SegmentedControl label="Decision" value={item.status ?? ''} onChange={status => onChange({ status })}>
+        <SegmentedControl label="Decision" value={decisionOf(item.status) ?? ''} onChange={status => onChange({ status })}>
           {DECISIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
         </SegmentedControl>
       </VStack>
@@ -179,6 +181,11 @@ export default function ItemDetail({ space, item, onChange, onBack }) {
           </VStack>
         </>
       )}
+
+      <VStack gap={2}>
+        <Button label="Save" variant="primary" size="lg" onClick={() => { toast({ body: `Saved ${item.name}`, autoHideDuration: 3000 }); onSave() }} />
+        <Text as="p" color="secondary" justify="center">Changes are kept as you go. Save takes you back to your inventory.</Text>
+      </VStack>
     </VStack>
   )
 }

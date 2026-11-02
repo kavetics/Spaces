@@ -29,7 +29,7 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, shareError, hasOwnerKey, onShare }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [crops, setCrops] = useState({})
@@ -39,6 +39,18 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   const [typedKey, setTypedKey] = useState('')
   const [sharing, setSharing] = useState(false)
   const [shareProblem, setShareProblem] = useState(null)
+
+  // After saving an item, bring it into view in the list.
+  useEffect(() => {
+    if (focusItem == null) return
+    const timer = setTimeout(() => {
+      document.querySelector(`[data-item="${focusItem}"]`)?.scrollIntoView?.({ block: 'center' })
+      onFocused()
+    }, 100)
+    return () => clearTimeout(timer)
+    // onFocused is new on every render; this should run once per saved item.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusItem])
 
   useEffect(() => {
     if (!result) return
@@ -160,7 +172,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           {actionsBelow}
         </VStack>
       )}
-      startContent={crops[item.id] ? <img className="inventory-crop" src={crops[item.id]} alt="" /> : <span className="inventory-crop" />}
+      startContent={crops[item.id] ? <img className="inventory-crop" src={crops[item.id]} alt="" data-item={item.id} /> : <span className="inventory-crop" data-item={item.id} />}
       endContent={sideAction}
     />
   )

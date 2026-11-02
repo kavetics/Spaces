@@ -1,13 +1,15 @@
 // An item's decision and sale details, following the Spaces inventory item schema.
 // Private fields stay on this phone: they're never sent to the server, Muse or a listing.
 
+// Donating and tossing are one choice, "Let go", stored as the schema's donate.
 export const DECISIONS = [
   ['keep', 'Keep'],
   ['sell', 'Sell'],
-  ['donate', 'Donate'],
-  ['trash', 'Toss'],
+  ['donate', 'Let go'],
 ]
-export const decisionLabel = status => DECISIONS.find(([id]) => id === status)?.[1] ?? null
+// Items marked toss before the two were combined count as let go.
+export const decisionOf = status => (status === 'trash' ? 'donate' : status)
+export const decisionLabel = status => DECISIONS.find(([id]) => id === decisionOf(status))?.[1] ?? null
 
 export const CONDITIONS = [
   ['like-new', 'Like new'],
