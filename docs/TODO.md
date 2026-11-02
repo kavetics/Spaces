@@ -23,6 +23,8 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] Let people correct item names and add items by hand
 - [ ] Store scans on the server (Supabase) for sharing and voting
 - [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
+- [x] Ask Muse in the app, with citations, for one Space or all Spaces
+- [ ] Let Ask Muse take actions, like removing an item or drafting a listing
 - [ ] Measure recognition on real scans against a hand-written answer key; results vary between runs
 - [x] ⑦ Referee mode: record a turn with sound (hold, or solo countdown), player x of y
 - [x] Catch judge: SAM follows the ball, Muse Spark rules caught, dropped or unclear

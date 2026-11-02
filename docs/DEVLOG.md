@@ -281,3 +281,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-01: Cleaner item lists
 - **Done:** removed items are deleted right away with a few seconds of Undo; categories and the nearby section collapse and stay as left.
 - **Next:** a rescan can bring removed items back, since matching items between scans isn't built.
+
+## 2026-11-02: Ask Muse
+- **Done:** Digital inventory section; Ask Muse page for one Space or all Spaces; inventory sent as a linked structure (Space, area, category, item, photo); citations open the scan photo with the item outlined.
+- **Decisions:** the phone sends the inventory with each question, so nothing has to be stored on the server. Plain code drops citations that weren't in what was sent.
+- **Learned:** answers took about 2 to 5 s on a small test inventory. The graph's value so far is citations and scope; a speedup is unmeasured.
+- **Next:** test on a real inventory and iPhone, including the keyboard.

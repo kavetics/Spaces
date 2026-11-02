@@ -10,6 +10,7 @@ import { judgeFind, writeClues } from './scavenger.js';
 import { refereeRound } from './roundReferee.js';
 import { lookAtFrame } from './look.js';
 import { buildInventory } from './inventory.js';
+import { askMuse } from './ask.js';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { refereeCatch } from './catchReferee.js';
@@ -19,7 +20,7 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 app.use(cors());
-app.use(express.json());
+app.use((req, res, next) => (req.path === '/api/ask' ? next() : express.json()(req, res, next)));
 
 const photoFrom = req => {
   if (!req.file) throw Object.assign(new Error('Attach a photo as "photo".'), { status: 400 });
@@ -117,6 +118,15 @@ app.post('/api/clap-catch/referee', upload.array('frames', 70), async (req, res,
       send({ step: 'error', error: err.message });
     }
     res.end();
+  } catch (err) { next(err); }
+});
+
+// A whole home's inventory comes with each question, since it's stored on the phone.
+app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {
+  try {
+    const { scope, spaces, messages } = req.body ?? {};
+    if (!Array.isArray(spaces) || !Array.isArray(messages) || !messages.length) throw Object.assign(new Error('Send spaces and messages.'), { status: 400 });
+    res.json(await askMuse({ scope, spaces, messages }));
   } catch (err) { next(err); }
 });
 

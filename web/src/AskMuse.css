@@ -1,0 +1,47 @@
+/* A chat needs a fixed header and message box around a scrolling middle. Colors use Astryx tokens. */
+.ask-muse {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-body);
+}
+.ask-muse-header { flex: none; padding-top: max(env(safe-area-inset-top), var(--spacing-3)); }
+.ask-muse-title { flex: 1; min-width: 0; }
+.ask-muse-messages { flex: 1; min-height: 0; overflow-y: auto; }
+.ask-muse-question {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-background-muted);
+}
+.ask-muse-input {
+  flex: none;
+  padding: var(--spacing-3) var(--spacing-4) max(env(safe-area-inset-bottom), var(--spacing-3));
+}
+.ask-muse-input > * { width: 100%; }
+.ask-muse-field { flex: 1; min-width: 0; }
+
+.citation {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* Tall scan photos must fit on screen, and the outline is positioned against the photo itself. */
+.citation-photo { position: relative; width: fit-content; margin: 0 auto; }
+.citation-photo img { display: block; max-width: 100%; max-height: 55dvh; border-radius: var(--radius-md); }
+.citation-box {
+  position: absolute;
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--color-background-body) 45%, transparent);
+  outline: 2px solid var(--color-accent);
+}
+.citation-photo { overflow: hidden; border-radius: var(--radius-md); }

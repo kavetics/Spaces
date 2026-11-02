@@ -12,10 +12,12 @@ import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
-import { countLabel, scannedAt, sortItems } from './spaceItems.js'
+import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
 const NEARBY = 'nearby'
+const INVENTORY = 'inventory'
+const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 const CROP_PX = 160 // crops are shown small, at twice their size for sharp phone screens
 const CROP_PADDING = 0.15 // a little of the surroundings makes an item easier to recognize
@@ -40,26 +42,8 @@ async function cropItem(frame, { box, wide }) {
   return canvas.toDataURL('image/jpeg', 0.8)
 }
 
-// In display order: what people care about most comes first, and Other is last.
-const CATEGORIES = [
-  ['furniture', 'Furniture'],
-  ['electronics', 'Electronics'],
-  ['appliances', 'Appliances'],
-  ['decor', 'Decor'],
-  ['plants', 'Plants'],
-  ['kitchen', 'Kitchen'],
-  ['fitness_hobbies', 'Fitness & hobbies'],
-  ['other', 'Other'],
-]
-// Scans saved before the list was shortened used these names.
-const OLD_CATEGORIES = { appliance: 'appliances', lighting: 'decor', textile: 'decor', storage: 'furniture', books_media: 'fitness_hobbies', plant: 'plants', tool: 'fitness_hobbies', outdoor: 'other', toy_game: 'fitness_hobbies', kitchenware: 'kitchen' }
-const categoryOf = item => {
-  const category = OLD_CATEGORIES[item.category] ?? item.category
-  return CATEGORIES.some(([id]) => id === category) ? category : 'other'
-}
-
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [crops, setCrops] = useState({})
@@ -153,13 +137,13 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       endContent={sideAction}
     />
   )
-  // Sections stay as they were left. Nearby starts closed, because it's what clutters the page most.
-  const section = (key, title, children) => (
+  // Sections stay as they were left. The big ones start closed to keep the page short.
+  const section = (key, title, children, level = 2) => (
     <Collapsible
       key={key}
-      isOpen={openSections[key] ?? key !== NEARBY}
+      isOpen={openSections[key] ?? !STARTS_CLOSED.includes(key)}
       onOpenChange={open => onSectionToggle(key, open)}
-      trigger={<Heading level={2}>{title}</Heading>}
+      trigger={<Heading level={level}>{title}</Heading>}
     >
       {children}
     </Collapsible>
@@ -169,21 +153,26 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       <HStack>{backButton}</HStack>
       <VStack gap={1}>
         <Heading level={1}>{spaceName}</Heading>
-        <Text as="p" color="secondary">{countLabel(inSpace.length)}. Scanned {scannedAt(savedAt)}.</Text>
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
+          <Button label="Rescan" size="sm" onClick={() => setAskRescan(true)} />
+        </HStack>
       </VStack>
       {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some items may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
-      {CATEGORIES.map(([id, label]) => {
-        const inCategory = inSpace.filter(i => categoryOf(i) === id)
-        if (!inCategory.length) return null
-        const sure = inCategory.filter(i => !i.needsReview)
-        const unsure = inCategory.filter(i => i.needsReview)
-        return (
-          section(id, `${label} (${inCategory.length})`, (
-            <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
-          ))
-        )
-      })}
+      {inSpace.length > 0 && section(INVENTORY, `Digital inventory (${inSpace.length})`, (
+        <VStack gap={3}>
+          {CATEGORIES.map(([id, label]) => {
+            const inCategory = inSpace.filter(i => categoryOf(i) === id)
+            if (!inCategory.length) return null
+            const sure = inCategory.filter(i => !i.needsReview)
+            const unsure = inCategory.filter(i => i.needsReview)
+            return section(id, `${label} (${inCategory.length})`, (
+              <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
+            ), 3)
+          })}
+        </VStack>
+      ))}
 
       {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
         <VStack gap={3}>
@@ -203,7 +192,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         </VStack>
       ))}
 
-      <Button label="Rescan" onClick={() => setAskRescan(true)} />
+      <Button label={`Ask Muse about ${spaceName}`} variant="primary" size="lg" onClick={onAsk} />
       <Button label="Delete Space" variant="ghost" onClick={() => setAskDelete(true)} />
       {dialogs}
     </VStack>

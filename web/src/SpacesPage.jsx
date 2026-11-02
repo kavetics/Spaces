@@ -33,7 +33,7 @@ function SpaceRow({ space, failed, onOpen }) {
 }
 
 /** Every Space on this phone, and the way to scan another. */
-export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother }) {
+export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk }) {
   return (
     <VStack gap={4} padding={4} className="inventory">
       <Heading level={1}>Your Spaces</Heading>
@@ -42,6 +42,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
       </List>
       <Button label="Scan another Space" variant="primary" size="lg" isDisabled={processing} onClick={onScanAnother} />
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
+      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" size="lg" onClick={onAsk} />}
     </VStack>
   )
 }

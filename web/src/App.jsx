@@ -5,7 +5,8 @@ import Inventory from './Inventory.jsx'
 import Welcome from './Welcome.jsx'
 import VoiceTest from './VoiceTest.jsx'
 import CatchTest from './CatchTest.jsx'
-import { deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
+import AskMuse from './AskMuse.jsx'
+import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
 import SpacesPage from './SpacesPage.jsx'
 import SpacePicker from './SpacePicker.jsx'
 import { askMotionPermission } from './sweep.js'
@@ -117,6 +118,7 @@ function Game() {
       savedAt: Date.now(),
     }
     saveSpace(fresh)
+    if (previous) deleteChat(previous.id) // it was about the items this scan replaces
     setSpaces(current => (previous ? current.map(s => (s.id === fresh.id ? fresh : s)) : [...current, fresh]))
     setFailed(({ [fresh.id]: _, ...rest }) => rest)
     setOpenId(fresh.id)
@@ -150,6 +152,7 @@ function Game() {
 
   async function onDelete() {
     await deleteSpace(open.id)
+    deleteChat(open.id)
     const left = spaces.filter(s => s.id !== open.id)
     setSpaces(left)
     setOpenId(null)
@@ -174,6 +177,7 @@ function Game() {
           processing={processing}
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
+          onAsk={() => setScreen('ask-all')}
         />
       )}
 
@@ -210,8 +214,12 @@ function Game() {
           onDelete={onDelete}
           onRescan={() => startScan(open.spaceName, open.id)}
           onBack={() => setScreen('spaces')}
+          onAsk={() => setScreen('ask-space')}
         />
       )}
+
+      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} />}
+      {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} />}
     </>
   )
 }
