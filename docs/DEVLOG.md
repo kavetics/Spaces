@@ -310,3 +310,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** details are only asked for items marked to sell, not during the scan, so scans stay fast. A field the person edits stops being labeled AI.
 - **Learned:** on real sofa photos the AI left brand empty (nothing readable) and estimated $350; it takes about 10 s.
 - **Next:** hide the Share with Muse switch for judges; listing draft; voice voting.
+
+## 2026-11-02: Declutter
+- **Done:** Declutter from Your Spaces: pick Spaces, then one item at a time with Keep, Sell or Let go, progress, Undo and Skip; Sell opens the sale form on the card. A summary lists what to sell (flagging items that still need photos) and what to let go. Let go replaces Donate and Toss. Items have a Save button.
+- **Decisions:** buttons, not swipes, so three choices are hard to get wrong. Every decision saves as it's made, so stopping partway loses nothing. Nearby items stay out of the stack.
+- **Next:** test on a phone; README and demo video.

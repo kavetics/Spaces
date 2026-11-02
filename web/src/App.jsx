@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { buildInventory, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
+import Declutter from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
 import ItemDetail from './ItemDetail.jsx'
 import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
@@ -185,6 +186,7 @@ export default function App() {
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
           onAsk={() => setScreen('ask-all')}
+          onDeclutter={() => setScreen('declutter')}
         />
       )}
 
@@ -246,6 +248,8 @@ export default function App() {
           }}
         />
       )}
+
+      {screen === 'declutter' && <Declutter spaces={spaces} onUpdateItem={updateItem} onExit={() => setScreen('spaces')} />}
 
       {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} />}
       {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} />}

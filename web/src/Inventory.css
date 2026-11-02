@@ -11,3 +11,6 @@
 .space-picker { width: 100%; max-width: 28rem; }
 .item-photo { display: block; width: 100%; max-height: 40dvh; object-fit: contain; border-radius: var(--radius-md); background: var(--color-background-muted); }
 .item-sale-photo { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-md); }
+.declutter-progress { flex: 1; min-width: 0; }
+.declutter-choices > * { flex: 1; }
+.declutter-blank { display: block; aspect-ratio: 4 / 3; }

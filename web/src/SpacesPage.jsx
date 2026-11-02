@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
 import { Heading } from '@astryxdesign/core/Heading'
+import { HStack } from '@astryxdesign/core/HStack'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
@@ -33,16 +34,19 @@ function SpaceRow({ space, failed, onOpen }) {
 }
 
 /** Every Space on this phone, and the way to scan another. */
-export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk }) {
+export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, onDeclutter }) {
   return (
     <VStack gap={4} padding={4} className="inventory">
-      <Heading level={1}>Your Spaces</Heading>
+      <HStack gap={2} vAlign="center" hAlign="between">
+        <Heading level={1}>Your Spaces</Heading>
+        <Button label="Scan another Space" size="sm" isDisabled={processing} onClick={onScanAnother} />
+      </HStack>
       <List hasDividers edge="flush">
         {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
       </List>
-      <Button label="Scan another Space" size="lg" isDisabled={processing} onClick={onScanAnother} />
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
-      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}
+      {spaces.some(s => s.result) && <Button label="Declutter" variant="primary" size="lg" onClick={onDeclutter} />}
+      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" size="lg" onClick={onAsk} />}
     </VStack>
   )
 }

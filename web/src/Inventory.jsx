@@ -189,16 +189,16 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   )
   return (
     <VStack gap={4} padding={4} className="inventory">
-      <HStack>{backButton}</HStack>
+      <HStack gap={2} vAlign="center" hAlign="between">
+        {backButton}
+        <Button label="Delete Space" variant="ghost" size="sm" onClick={() => setAskDelete(true)} />
+      </HStack>
       <VStack gap={1}>
         <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={1}>{spaceName}</Heading>
-          <Button label="Delete Space" variant="ghost" size="sm" onClick={() => setAskDelete(true)} />
-        </HStack>
-        <HStack gap={2} vAlign="center" hAlign="between">
-          <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
           <Button label="Rescan" size="sm" onClick={() => setAskRescan(true)} />
         </HStack>
+        <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
         {SHOW_SHARING && <Switch
           label="Share with Muse"
           description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Photos stay on this phone."
