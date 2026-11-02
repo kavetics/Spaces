@@ -326,3 +326,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** never merge silently: a confirmed repeat is removed, a "different" one is kept. If the check fails, new items are just added.
 - **Learned:** on real photos, Spark matched the same sofa from a different angle and kept a similar loveseat separate (about 10 to 16 s).
 - **Next:** test on the backyard; README and demo video.
+
+## 2026-11-03: Scanning guide and multi-part scans
+- **Done:** a guide (open room vs L-shaped Space) before every scan or rescan, with a Scanning tips link on the scanner. After each part, "Is there more?" offers another part, photos, or Done, while earlier parts process in the background.
+- **Fixed:** a finished recognition run only started the next queued one if something else on the page changed; now it always checks again.
+- **Decisions:** the backyard test of Add more found repeats well enough, so multiple scans is the approach for irregular Spaces. A block map and true spatial mapping (native app with Apple's RoomPlan, or matching items between scans) go on the roadmap.
+- **Next:** README, Meta feedback report, demo video.

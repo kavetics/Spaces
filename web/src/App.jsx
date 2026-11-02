@@ -3,6 +3,8 @@ import { buildInventory, findRepeats, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
 import Declutter, { declutterLeft } from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
+import MoreParts from './MoreParts.jsx'
+import ScanGuide from './ScanGuide.jsx'
 import ItemDetail from './ItemDetail.jsx'
 import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
@@ -24,9 +26,12 @@ export default function App() {
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
   const [leftToDeclutter, setLeftToDeclutter] = useState(null)
+  const [showGuide, setShowGuide] = useState(false)
+  const [parts, setParts] = useState(1) // parts of the open Space scanned in this go, for the "Is there more?" screen
   const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
   const [failed, setFailed] = useState({}) // id → why recognition stopped
   const [progress, setProgress] = useState(null)
+  const [runsDone, setRunsDone] = useState(0)
   const running = useRef(null) // only one Space is recognized at a time, since each run costs money
   const picturing = useRef(null) // pictures are made for one Space at a time, to keep memory low
   const synced = useRef({}) // id → the item list the server last got, so unchanged Spaces aren't sent again
@@ -68,8 +73,9 @@ export default function App() {
       .then(result => change(next.id, s => ({ ...s, result })))
     work
       .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
-      .finally(() => { running.current = null })
-  }, [spaces, failed])
+      // A run's own update lands while it still counts as running, so look for queued work again after.
+      .finally(() => { running.current = null; setRunsDone(n => n + 1) })
+  }, [spaces, failed, runsDone])
 
   /**
    * Recognizes added photos, makes the new items' pictures, and asks which may already be listed.
@@ -175,7 +181,8 @@ export default function App() {
     if (pending.adding) {
       addPhotos(pending.id, frames)
       setOpenId(pending.id)
-      setScreen('space')
+      setParts(p => p + 1)
+      setScreen('more')
       return
     }
     const previous = spaces.find(s => s.id === pending.id)
@@ -194,13 +201,16 @@ export default function App() {
     setSpaces(current => (previous ? current.map(s => (s.id === fresh.id ? fresh : s)) : [...current, fresh]))
     setFailed(({ [fresh.id]: _, ...rest }) => rest)
     setOpenId(fresh.id)
-    setScreen('space')
+    setParts(1)
+    setScreen('more')
   }
 
   // Photos can only be taken after motion access, which iPhones only grant from a tap like this one.
+  // The guide shows before every scan or rescan, but not for the extra parts of a Space.
   function startScan(name, id, adding = false) {
     askMotionPermission()
-    setPending({ name, id, adding })
+    setPending({ name, id, adding, from: screen })
+    setShowGuide(!adding)
     setScreen('scan')
   }
 
@@ -242,7 +252,8 @@ export default function App() {
   }
 
   const leaveScanner = () => {
-    if (pending?.id) setScreen('space')
+    if (pending?.adding) setScreen(pending.from === 'more' ? 'more' : 'space')
+    else if (pending?.id) setScreen('space')
     else setScreen('pick')
   }
 
@@ -281,8 +292,20 @@ export default function App() {
             onCapture={onScan}
             onBack={leaveScanner}
             onUpload={() => fileInput.current?.click()}
+            onTips={() => setShowGuide(true)}
           />
+          <ScanGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
         </Suspense>
+      )}
+
+      {screen === 'more' && open && (
+        <MoreParts
+          space={open}
+          parts={parts}
+          onScanAnother={() => startScan(open.spaceName, open.id, true)}
+          onAddPhotos={frames => { if (frames.length) { addPhotos(open.id, frames); setParts(p => p + 1) } }}
+          onDone={() => setScreen('space')}
+        />
       )}
 
       {screen === 'space' && open && (

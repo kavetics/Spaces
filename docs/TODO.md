@@ -23,6 +23,9 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [ ] Let people correct item names and add items by hand
 - [ ] Store scans on the server (Supabase) for sharing and voting
 - [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
+- [x] Scanning guide; scan a Space in several parts
+- [ ] Roadmap: approximate around-you map (rings in feet), only if time allows
+- [ ] Roadmap: spatial memory in a native app with Apple's RoomPlan; place scans by matching items between them
 - [x] Add more to a Space (another scan or photos), with possible repeats to confirm
 - [x] Declutter: one item at a time, with sell and let go lists at the end
 - [x] Item details following the Muse schema; keep, sell, donate or toss; sell flow with AI-filled details

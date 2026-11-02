@@ -15,3 +15,8 @@
 .declutter-choices > * { flex: 1; }
 .declutter-blank { display: block; aspect-ratio: 4 / 3; }
 .declutter-resume { padding: var(--spacing-4); border-radius: var(--radius-md); background: var(--color-background-muted); }
+.guide-art { display: block; width: 100%; height: auto; }
+.guide-room { fill: var(--color-background-muted); stroke: var(--color-border-emphasized); stroke-width: 1.5; }
+.guide-spot { fill: var(--color-accent); }
+.guide-turn { fill: none; stroke: var(--color-accent); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.guide-label { fill: var(--color-text-primary); font-size: 12px; }

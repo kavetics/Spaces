@@ -18,7 +18,7 @@ import './Camera.css'
  * phone is lined up and still. Always the 1× lens, no zoom. Dark theme, since it sits on live video.
  * onCapture({ frames: Blob[], compass })
  */
-export default function Camera({ title, hint, onCapture, onBack, onUpload }) {
+export default function Camera({ title, hint, onCapture, onBack, onUpload, onTips }) {
   const { video, status, error, stop: stopCamera, retry } = useCamera()
   const direction = useRef(null) // { heading, pitch } from the motion sensor
   const scan = useRef(null)
@@ -161,6 +161,7 @@ export default function Camera({ title, hint, onCapture, onBack, onUpload }) {
           {state === 'ready' && <Button label="Start scan" variant="primary" size="lg" onClick={startScan} />}
           {scanning && live?.taken >= SCAN.minSidesForDone && <Button label="Done turning" onClick={finish} />}
           {onUpload && (state === 'ready' || state === 'error') && <Button label="Upload a photo instead" variant="ghost" size="sm" onClick={onUpload} />}
+          {onTips && (state === 'ready' || state === 'error') && <Button label="Scanning tips" variant="ghost" size="sm" onClick={onTips} />}
         </VStack>
       </section>
     </Theme>
