@@ -9,7 +9,8 @@ async function json(res) {
 /** Connection trouble, as opposed to the server answering with an error. */
 const isConnectionError = err => err.name === 'TypeError' || err.name === 'AbortError' || err.name === 'TimeoutError';
 
-// A scan's photos become an inventory. Silence for this long means the phone dropped off or the work hung.
+// A scan's photos become an inventory. The server sends a line at least every 15 s while it works, so silence
+// for this long means the phone dropped off or the work hung.
 const INVENTORY_SILENCE_MS = 90000;
 export async function buildInventory(frames, space, onProgress = () => {}) {
   const body = new FormData();
@@ -17,6 +18,7 @@ export async function buildInventory(frames, space, onProgress = () => {}) {
   frames.forEach((f, i) => body.append('frames', f, `room-${i}.jpg`));
   const controller = new AbortController();
   let silence;
+  let heardBack = false; // the server answered, so a later abort is lost touch, not an unreachable server
   const stillAlive = () => {
     clearTimeout(silence);
     silence = setTimeout(() => controller.abort(), INVENTORY_SILENCE_MS);
@@ -24,6 +26,7 @@ export async function buildInventory(frames, space, onProgress = () => {}) {
   stillAlive();
   try {
     const res = await fetch('/api/inventory', { method: 'POST', body, signal: controller.signal });
+    heardBack = true;
     stillAlive();
     if (!res.ok) return await json(res); // throws with the server's message
     const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -39,10 +42,12 @@ export async function buildInventory(frames, space, onProgress = () => {}) {
         const event = JSON.parse(line);
         if (event.step === 'error') throw new Error(event.error);
         if (event.step === 'done') return event.result;
+        if (event.step === 'alive') continue; // only keeps the connection open; the screen keeps its step
         onProgress(event);
       }
     }
   } catch (err) {
+    if (isConnectionError(err) && heardBack) throw new Error('Lost touch with the server while finding things. Keep the screen on and try again.');
     if (isConnectionError(err)) throw new Error("Couldn't reach the app. Check your connection and try again.");
     throw err;
   } finally {

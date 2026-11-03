@@ -419,3 +419,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Follow-up:** the scanner uses the Spaces theme: gold buttons, gold dot and hold-still arc, a ring that turns gold once lined up, and a gold flash on each photo.
 - **Follow-up:** Add a person is its own page. On iPhone the Phone field's cursor drew a line too low; a cursor nudge and the move out of a pop-up didn't help. Moving the hint from above the field to below it, with the page scrolling the document, fixed it (tested on the owner's iPhone). The Family vote button sits on its title row, so a long "waiting for" list can't squeeze it.
 - **Learned:** in iPhone Safari, a field with a hint between its label and its box can get a misplaced cursor. Keep hints under the field.
+
+## 2026-11-03: Scans failing with "Couldn't reach the app"
+- **Done:** found why big scans failed. The phone gives up after 90 s without hearing from the server, and merging repeats (one Muse call) took 89 s on a 56-sighting living room scan, with nothing sent meanwhile. The server now sends a "still working" line every 15 s; the phone ignores it for the on-screen step. If the server does go quiet after answering, the message now says it lost touch, instead of blaming the connection.
+- **Measured:** the same 8 photos rerun through the server: merging 77 s, longest silence 15 s, 49 things, 130 s in all.
+- **Next:** merging is the slowest step of a scan (about 60% of the time); worth trimming after the hackathon.

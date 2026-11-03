@@ -15,6 +15,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const app = express();
+const ALIVE_MS = 15000;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 app.use(cors());
@@ -74,7 +75,11 @@ app.post('/api/inventory', upload.array('frames', 10), async (req, res, next) =>
     res.setHeader('Content-Type', 'application/x-ndjson');
     res.setHeader('Cache-Control', 'no-cache');
     res.flushHeaders();
-    const send = line => res.write(`${JSON.stringify(line)}\n`);
+    // A phone that left mid-scan has closed the connection; writing to it then would fail.
+    const send = line => { if (!res.destroyed && !res.writableEnded) res.write(`${JSON.stringify(line)}\n`); };
+    // One Muse call (merging repeats across photos) can run 90 s with nothing to report. A line every 15 s
+    // tells the phone the work is still going, so it only gives up on a connection that's really gone.
+    const alive = setInterval(() => send({ step: 'alive' }), ALIVE_MS);
     try {
       const space = String(req.body.space || 'room').trim().slice(0, 40) || 'room';
       const result = await buildInventory(req.files.map(f => toDataUrl(f.buffer, f.mimetype)), { space, onProgress: send });
@@ -82,6 +87,8 @@ app.post('/api/inventory', upload.array('frames', 10), async (req, res, next) =>
     } catch (err) {
       console.error(err);
       send({ step: 'error', error: err.message });
+    } finally {
+      clearInterval(alive);
     }
     res.end();
   } catch (err) { next(err); }
