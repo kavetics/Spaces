@@ -6,18 +6,45 @@ import { listShared, sameKey } from './shared.js';
 const MAX_LIMIT = 50;
 const DEFAULT_LIMIT = 20;
 
-/** Shared Spaces as flat items Muse can search. */
+// Spaces' condition words, in Marketplace's. "Needs repair" has no Marketplace value of its own.
+const MARKETPLACE_CONDITION = { 'like-new': 'used_like_new', good: 'used_good', fair: 'used_fair', 'needs-repair': 'used' };
+
+/**
+ * A Marketplace-ready listing for an item marked Sell: the owner's draft, price, condition and up to 3
+ * small sale photos as JPEG data. `missing` names what Marketplace still needs before it can go live
+ * (location always comes from the owner, so it's never listed here).
+ */
+export function listingFor(item) {
+  if (item.status !== 'sell') return null;
+  const listing = {
+    title: item.listingTitle || item.name,
+    description: item.listingDescription || item.description || null,
+    price: item.askingPrice ?? null,
+    condition: MARKETPLACE_CONDITION[item.condition] ?? null,
+    category: item.category, // a Spaces category; map it to the closest Marketplace one
+    photos: item.photos ?? [],
+    status: item.listingStatus ?? 'not-listed',
+  };
+  listing.missing = [!listing.price && 'price', !listing.condition && 'condition', !listing.photos.length && 'photo'].filter(Boolean);
+  return listing;
+}
+
+/** Shared Spaces as flat items Muse can search. Items marked Sell carry their listing. */
 async function sharedItems() {
   const spaces = await listShared();
   return {
     spaces,
-    items: spaces.flatMap(space => space.items.map((item, i) => ({
-      id: `${space.id}:${i}`,
-      space: space.id,
-      space_name: space.name,
-      scanned: space.scanned_at.slice(0, 10),
-      ...item,
-    }))),
+    items: spaces.flatMap(space => space.items.map(({ listingTitle, listingDescription, photos, ...item }, i) => {
+      const listing = listingFor({ ...item, listingTitle, listingDescription, photos });
+      return {
+        id: `${space.id}:${i}`,
+        space: space.id,
+        space_name: space.name,
+        scanned: space.scanned_at.slice(0, 10),
+        ...item,
+        ...(listing && { listing }),
+      };
+    })),
   };
 }
 
@@ -39,13 +66,20 @@ function requireKey(req, res, next) {
 
 const OPENAPI = {
   openapi: '3.0.3',
-  info: { title: 'Spaces', version: '0.2.0', description: 'Read-only search of the home inventory Spaces its owner chose to share. Items marked nearby were seen near a Space, not in it. scanned is when the Space was photographed, so things may have changed since.' },
+  info: { title: 'Spaces', version: '0.3.0', description: 'Read-only search of the home inventory Spaces its owner chose to share. Items marked nearby were seen near a Space, not in it. scanned is when the Space was photographed, so things may have changed since. Items the owner marked Sell carry a `listing` ready for Facebook Marketplace: title, description, price in dollars, condition in Marketplace values, a Spaces category to map to the closest Marketplace one, and up to 3 photos as data:image/jpeg;base64 strings to decode and save as .jpg files. `missing` lists what Marketplace still needs; ask the owner for those, and for their location. /listings returns only items for sale.' },
   servers: [{ url: '/api/connector/v1' }],
   security: [{ key: [] }],
   components: { securitySchemes: { key: { type: 'http', scheme: 'bearer' } } },
   paths: {
     '/ping': { get: { summary: 'Check the connection. Harmless.', responses: { 200: { description: 'OK' }, 401: { description: 'Missing or wrong key' } } } },
     '/spaces': { get: { summary: 'List shared Spaces, when each was scanned, and item counts.', responses: { 200: { description: 'OK' } } } },
+    '/listings': {
+      get: {
+        summary: 'Items the owner marked Sell and has not sold yet, each with a Marketplace-ready listing and photos.',
+        parameters: [{ name: 'space', in: 'query', schema: { type: 'string' }, description: 'A Space id from /spaces.' }],
+        responses: { 200: { description: 'OK' } },
+      },
+    },
     '/items': {
       get: {
         summary: 'Search items. With no filters, lists everything.',
@@ -77,6 +111,13 @@ connector.get('/spaces', async (_req, res, next) => {
   try {
     const { spaces } = await sharedItems();
     res.json({ spaces: spaces.map(s => ({ id: s.id, name: s.name, scanned: s.scanned_at.slice(0, 10), items: s.items.length })) });
+  } catch (err) { next(err); }
+});
+connector.get('/listings', async (req, res, next) => {
+  try {
+    const { space } = req.query;
+    const items = (await sharedItems()).items.filter(i => i.listing && i.listing.status !== 'sold' && (!space || i.space === space));
+    res.json({ total: items.length, items });
   } catch (err) { next(err); }
 });
 connector.get('/items', async (req, res, next) => {

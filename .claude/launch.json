@@ -49,6 +49,19 @@
         "server/src/index.js"
       ],
       "port": 8789
+    },
+    {
+      "name": "share-test",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NODE_ENV=production",
+        "PORT=8790",
+        "node",
+        "--env-file=.env",
+        "--env-file=.env.test",
+        "server/src/index.js"
+      ],
+      "port": 8790
     }
   ]
 }

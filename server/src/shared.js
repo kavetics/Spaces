@@ -1,9 +1,12 @@
-// Spaces their owner shared with Muse, kept in Supabase as names and item lists, never photos.
+// Spaces their owner shared with Muse, kept in Supabase as names and item lists. Room photos never come
+// here; items marked Sell may carry up to 3 small sale photos, for listing them on Marketplace.
 // Without accounts, only someone with the owner key can share, change or unshare a Space.
 import { timingSafeEqual } from 'node:crypto';
 import express from 'express';
 
 const MAX_ITEMS = 500;
+const MAX_PHOTOS = 3; // per item marked Sell
+const MAX_PHOTO = 150_000; // characters of a data URL, about 110 KB of JPEG
 const text = (value, max = 200) => String(value ?? '').slice(0, max);
 const price = v => (typeof v === 'number' && v > 0 && v < 1e6 ? Math.round(v) : null);
 
@@ -58,6 +61,14 @@ export function cleanItems(items) {
     estimatedValue: price(i.estimatedValue),
     askingPrice: price(i.askingPrice),
     listingStatus: ['not-listed', 'draft', 'listed', 'sold'].includes(i.listingStatus) ? i.listingStatus : null,
+    // Only items marked Sell carry a listing: its draft, and up to 3 small JPEG sale photos.
+    ...(i.status === 'sell' && {
+      listingTitle: text(i.listingTitle, 80) || null,
+      listingDescription: text(i.listingDescription, 2000) || null,
+      photos: (Array.isArray(i.photos) ? i.photos : [])
+        .filter(p => typeof p === 'string' && p.startsWith('data:image/jpeg;base64,') && p.length <= MAX_PHOTO)
+        .slice(0, MAX_PHOTOS),
+    }),
   })).filter(i => i.name);
 }
 
@@ -90,7 +101,7 @@ shared.get('/', async (_req, res, next) => {
 });
 
 // Share a Space, or update one already shared. The phone sends this again whenever its items change.
-shared.put('/:id', express.json({ limit: '1mb' }), async (req, res, next) => {
+shared.put('/:id', express.json({ limit: '6mb' }), async (req, res, next) => {
   try {
     const scanned = new Date(req.body?.scannedAt);
     if (Number.isNaN(scanned.getTime())) throw Object.assign(new Error('Send when it was scanned.'), { status: 400 });

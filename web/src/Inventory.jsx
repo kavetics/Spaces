@@ -225,7 +225,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         {usedBy?.length > 0 && <Text color="secondary">Used by {andList(usedBy)}</Text>}
         {SHOW_SHARING && <Switch
           label="Share with Muse"
-          description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Photos stay on this phone."
+          description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Items marked Sell also send up to 3 small sale photos and their listing draft, so Muse can list them on Marketplace. Room photos stay on this phone."
           value={Boolean(space.shared)}
           isDisabled={sharing}
           onChange={on => toggleShare(on)}
