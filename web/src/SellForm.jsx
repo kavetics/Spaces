@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
+import { Collapsible } from '@astryxdesign/core/Collapsible'
 import { Grid } from '@astryxdesign/core/Grid'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
@@ -19,7 +20,10 @@ import './Inventory.css'
 const MAX_SALE_PHOTOS = 6
 const list = text => text.split(',').map(s => s.trim()).filter(Boolean)
 
-/** What selling an item needs: more photos, AI-filled details to check, a price and private notes. */
+/**
+ * What selling an item needs, in the order Marketplace asks: photos, a price, the condition and a listing.
+ * Everything else is optional, under More details.
+ */
 export default function SellForm({ item, onChange, autoDraft }) {
   const details = item.details ?? {}
   const ai = new Set(details.aiFields ?? [])
@@ -59,7 +63,7 @@ export default function SellForm({ item, onChange, autoDraft }) {
     <>
       <VStack gap={2}>
         <Heading level={2}>Photos for selling</Heading>
-        <Text as="p" color="secondary">Take 2 to 4 photos: the front, the back, any labels or model numbers, and any damage. These stay on this phone, and help fill in the details below.</Text>
+        <Text as="p" color="secondary">2 to 4 photos: front, back, any label, any damage. They stay on this phone.</Text>
         <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={addPhotos} />
         {salePhotos.length > 0 && (
           <Grid columns={3} gap={2}>
@@ -73,53 +77,23 @@ export default function SellForm({ item, onChange, autoDraft }) {
         {fillError && <Text as="p" role="alert">{fillError}</Text>}
       </VStack>
 
-      {ai.size > 0 && <Banner status="info" title="Some details are from AI and may not be accurate." description="Check each one marked AI estimate before you list it. Changing a field makes it yours." />}
+      {ai.size > 0 && <Banner status="info" title="Some details are from AI and may not be accurate." description="Check the ones marked AI estimate, including under More details. Changing a field makes it yours." />}
 
       <VStack gap={3}>
-        <Heading level={2}>Details for a listing</Heading>
-        <TextInput label={label('Brand', 'brand')} value={details.brand ?? ''} onChange={v => set('brand', v || null)} />
-        <TextInput label={label('Model', 'model')} value={details.model ?? ''} onChange={v => set('model', v || null)} />
-        <TextInput label={label('Size', 'size')} placeholder="55-inch, 3-seat" value={details.size ?? ''} onChange={v => set('size', v || null)} />
-        <VStack gap={1}>
-          <Text type="label">{label('Condition', 'condition')}</Text>
-          <SegmentedControl label="Condition" value={details.condition ?? ''} onChange={v => set('condition', v)}>
-            {CONDITIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
-          </SegmentedControl>
-        </VStack>
-        <TextArea label={label('Condition notes', 'conditionNotes')} value={details.conditionNotes ?? ''} onChange={v => set('conditionNotes', v || null)} />
-        <TextInput label={label('Defects, separated by commas', 'defects')} value={(details.defects ?? []).join(', ')} onChange={v => set('defects', list(v))} />
-        <TextInput label={label('Included items, separated by commas', 'includedItems')} placeholder="remote, cushions" value={(details.includedItems ?? []).join(', ')} onChange={v => set('includedItems', list(v))} />
-        <Text type="label">{label('Dimensions in inches', 'dimensions')}</Text>
-        <Grid columns={3} gap={2}>
-          <NumberInput label="Width" min={0} value={dims.width ?? null} onChange={v => setDim('width', v)} />
-          <NumberInput label="Height" min={0} value={dims.height ?? null} onChange={v => setDim('height', v)} />
-          <NumberInput label="Depth" min={0} value={dims.depth ?? null} onChange={v => setDim('depth', v)} />
-        </Grid>
-        {Object.keys(details.attributes ?? {}).length > 0 && (
-          <VStack gap={1}>
-            <Text type="label">{label('Features', 'attributes')}</Text>
-            {Object.entries(details.attributes).map(([k, v]) => <Text key={k} as="p">{k}: {v}</Text>)}
-          </VStack>
-        )}
-        <VStack gap={1}>
-          <Text type="label">Does it work?</Text>
-          <SegmentedControl label="Does it work?" value={details.working == null ? 'unknown' : String(details.working)} onChange={v => set('working', v === 'unknown' ? null : v === 'true')}>
-            <SegmentedControlItem value="true" label="Yes" />
-            <SegmentedControlItem value="false" label="No" />
-            <SegmentedControlItem value="unknown" label="Not sure" />
-          </SegmentedControl>
-        </VStack>
-      </VStack>
-
-      <VStack gap={3}>
-        <Heading level={2}>Price</Heading>
+        <Heading level={2}>Price and condition</Heading>
         {value
           ? <Text as="p">Estimated value: ${value.amount}. {value.source.replace(/\.$/, '')}. This is an AI estimate and may not be accurate.</Text>
           : <Text as="p" color="secondary">Add photos and fill in details to get an AI estimate.</Text>}
         <NumberInput label="Your asking price, in dollars" min={0} value={details.askingPrice ?? null} onChange={v => set('askingPrice', v)} />
         <VStack gap={1}>
+          <Text type="label">{label('Condition', 'condition')}</Text>
+          <SegmentedControl label="Condition" layout="fill" value={details.condition ?? ''} onChange={v => set('condition', v)}>
+            {CONDITIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
+          </SegmentedControl>
+        </VStack>
+        <VStack gap={1}>
           <Text type="label">Listing</Text>
-          <SegmentedControl label="Listing" value={details.listingStatus ?? 'not-listed'} onChange={v => set('listingStatus', v)}>
+          <SegmentedControl label="Listing" layout="fill" value={details.listingStatus ?? 'not-listed'} onChange={v => set('listingStatus', v)}>
             {LISTING.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
           </SegmentedControl>
         </VStack>
@@ -127,13 +101,38 @@ export default function SellForm({ item, onChange, autoDraft }) {
 
       <ListingDraft item={item} onChange={onChange} autoDraft={autoDraft} />
 
-      <VStack gap={3}>
-        <Heading level={2}>Private</Heading>
-        <Text as="p" color="secondary">These stay on this phone. They're never shared with Muse or put in a listing.</Text>
-        <TextInput label="Purchase date" placeholder="2023-05-01" value={details.purchaseDate ?? ''} onChange={v => set('purchaseDate', v || null)} />
-        <NumberInput label="Purchase price, in dollars" min={0} value={details.purchasePrice ?? null} onChange={v => set('purchasePrice', v)} />
-        <TextInput label="Serial number" value={details.serialNumber ?? ''} onChange={v => set('serialNumber', v || null)} />
-      </VStack>
+      {/* Optional: Marketplace needs only photos, a title, a price and the condition. These make Muse's listing and answers better. */}
+      <Collapsible defaultIsOpen={false} trigger={<Heading level={2}>More details</Heading>}>
+        <VStack gap={3}>
+          <Text as="p" color="secondary">Optional. Muse uses these for the listing and your questions. Fill in details with AI fills most of them.</Text>
+          <TextInput label={label('Brand', 'brand')} value={details.brand ?? ''} onChange={v => set('brand', v || null)} />
+          <TextInput label={label('Model', 'model')} value={details.model ?? ''} onChange={v => set('model', v || null)} />
+          <TextInput label={label('Size', 'size')} placeholder="55-inch, 3-seat" value={details.size ?? ''} onChange={v => set('size', v || null)} />
+          <TextArea label={label('Condition notes', 'conditionNotes')} value={details.conditionNotes ?? ''} onChange={v => set('conditionNotes', v || null)} />
+          <TextInput label={label('Defects, separated by commas', 'defects')} value={(details.defects ?? []).join(', ')} onChange={v => set('defects', list(v))} />
+          <TextInput label={label('Included items, separated by commas', 'includedItems')} placeholder="remote, cushions" value={(details.includedItems ?? []).join(', ')} onChange={v => set('includedItems', list(v))} />
+          <Text type="label">{label('Dimensions in inches', 'dimensions')}</Text>
+          <Grid columns={3} gap={2}>
+            <NumberInput label="Width" min={0} value={dims.width ?? null} onChange={v => setDim('width', v)} />
+            <NumberInput label="Height" min={0} value={dims.height ?? null} onChange={v => setDim('height', v)} />
+            <NumberInput label="Depth" min={0} value={dims.depth ?? null} onChange={v => setDim('depth', v)} />
+          </Grid>
+          {Object.keys(details.attributes ?? {}).length > 0 && (
+            <VStack gap={1}>
+              <Text type="label">{label('Features', 'attributes')}</Text>
+              {Object.entries(details.attributes).map(([k, v]) => <Text key={k} as="p">{k}: {v}</Text>)}
+            </VStack>
+          )}
+          <VStack gap={1}>
+            <Text type="label">Does it work?</Text>
+            <SegmentedControl label="Does it work?" value={details.working == null ? 'unknown' : String(details.working)} onChange={v => set('working', v === 'unknown' ? null : v === 'true')}>
+              <SegmentedControlItem value="true" label="Yes" />
+              <SegmentedControlItem value="false" label="No" />
+              <SegmentedControlItem value="unknown" label="Not sure" />
+            </SegmentedControl>
+          </VStack>
+        </VStack>
+      </Collapsible>
     </>
   )
 }

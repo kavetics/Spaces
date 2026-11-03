@@ -12,7 +12,8 @@ import SpacePicker from './SpacePicker.jsx'
 import Selling from './Selling.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import VoteSetup, { VoteStatus } from './VoteSetup.jsx'
-import { tally, tallyLine } from './votes.js'
+import VoteReview from './VoteReview.jsx'
+import { resultsFor, tally, tallyLine } from './votes.js'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { makePictures, needsPictures } from './crop.js'
 import { categoryOf, sortItems } from './spaceItems.js'
@@ -245,7 +246,9 @@ export default function App() {
   // Decisions and sale details live on the item, with the time they last changed.
   // Family votes, fetched whenever a Space's page, an item or Declutter opens, and for every Space on
   // the For sale & letting go page.
-  const votesFor = screen === 'selling' ? spaces.filter(s => s.voteLink) : open?.voteLink && ['space', 'item', 'declutter'].includes(screen) ? [open] : []
+  // An ended vote's results are kept on the phone, so only open votes are fetched.
+  const isOpenVote = space => space?.voteLink && !space.voteLink.final
+  const votesFor = screen === 'selling' ? spaces.filter(isOpenVote) : isOpenVote(open) && ['space', 'item', 'declutter', 'vote-review'].includes(screen) ? [open] : []
   const voteLinkIds = votesFor.map(s => s.voteLink.id).join()
   useEffect(() => {
     let cancelled = false
@@ -267,17 +270,31 @@ export default function App() {
 
   const askFamily = (preselect = null, from = 'space') => { setVoteSetup({ preselect, from }); setScreen('vote-setup') }
 
-  async function stopVote(space) {
+  // Ending a vote: take the latest votes, keep them on the phone, and delete the link from the server.
+  async function endVote(space) {
+    const { voteLink: link } = space
+    const gone = err => err.status === 404 || err.status === 410
+    let votes = voteResults[space.id]?.votes ?? []
     try {
-      await deleteVoteLink(space.voteLink.id, space.voteLink.ownerToken)
+      votes = (await getVoteResults(link.id, link.ownerToken)).votes
     } catch (err) {
-      if (err.status !== 404 && err.status !== 410) throw err
+      if (!gone(err)) throw err // already ended on the server: keep the last votes seen
     }
+    try {
+      await deleteVoteLink(link.id, link.ownerToken)
+    } catch (err) {
+      if (!gone(err)) throw err
+    }
+    change(space.id, s => ({ ...s, voteLink: { ...s.voteLink, final: { votes, endedAt: new Date().toISOString() } } }))
+    setScreen('vote-review')
+  }
+
+  function clearVote(space) {
     change(space.id, ({ voteLink: _, ...s }) => s)
     setVoteResults(({ [space.id]: _, ...rest }) => rest)
   }
 
-  const familyVotes = (space, itemId) => tallyLine(tally(space, voteResults[space.id], itemId))
+  const familyVotes = (space, itemId) => tallyLine(tally(space, resultsFor(space, voteResults[space.id]), itemId))
 
   function updateItem(spaceId, itemId, patch) {
     change(spaceId, s => ({
@@ -430,7 +447,15 @@ export default function App() {
           usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
           onAskFamily={() => askFamily()}
           voteStatus={open.voteLink && (
-            <VoteStatus space={open} people={people} results={voteResults[open.id]} onNewVote={() => askFamily()} onStop={() => stopVote(open)} />
+            <VoteStatus
+              space={open}
+              people={people}
+              results={resultsFor(open, voteResults[open.id])}
+              onNewVote={() => askFamily()}
+              onEnd={() => endVote(open)}
+              onReview={() => setScreen('vote-review')}
+              onClear={() => clearVote(open)}
+            />
           )}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
@@ -449,8 +474,8 @@ export default function App() {
           onChange={patch => updateItem(open.id, openItem.id, patch)}
           familyVotes={familyVotes(open, openItem.id)}
           onAskFamily={() => askFamily([openItem.id], 'item')}
-          backLabel={itemFrom === 'selling' ? 'For sale & letting go' : itemFrom ? 'Ask Muse' : undefined}
-          autoDraft={Boolean(itemFrom) && itemFrom !== 'selling'} // from Ask Muse, its listing starts drafting
+          backLabel={{ selling: 'For sale & letting go', 'vote-review': 'Family vote results' }[itemFrom] ?? (itemFrom ? 'Ask Muse' : undefined)}
+          autoDraft={Boolean(itemFrom?.startsWith('ask'))} // from Ask Muse, its listing starts drafting
           onBack={() => setScreen(itemFrom ?? 'space')}
           onSave={() => {
             if (itemFrom) { setScreen(itemFrom); return }
@@ -488,6 +513,16 @@ export default function App() {
         />
       )}
 
+      {screen === 'vote-review' && open?.voteLink && (
+        <VoteReview
+          space={open}
+          results={resultsFor(open, voteResults[open.id])}
+          onDecide={(itemId, status) => updateItem(open.id, itemId, { status })}
+          onOpenItem={itemId => { setOpenItemId(itemId); setItemFrom('vote-review'); setScreen('item') }}
+          onBack={() => setScreen('space')}
+        />
+      )}
+
       {screen === 'vote-setup' && open && (
         <VoteSetup
           key={open.id}
@@ -503,6 +538,7 @@ export default function App() {
         />
       )}
 
-      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}    </>
+      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}
+    </>
   )
 }

@@ -58,3 +58,12 @@ export function turnout(space, results) {
     waiting: space.voteLink.voters.filter(v => !sent.has(v.id)).map(v => v.name),
   }
 }
+
+/** The family's pick for an item: the choice with the most votes, or null with no votes or a tie. */
+export function topPick(counts) {
+  if (!counts?.length) return null
+  return counts.length === 1 || counts[0].voters.length > counts[1].voters.length ? counts[0].choice : null
+}
+
+/** The votes to show: kept on the phone once a vote has ended, otherwise as the server last sent them. */
+export const resultsFor = (space, live) => space.voteLink?.final ?? live

@@ -47,34 +47,52 @@ export function ShareVoteLink({ space, people }) {
   )
 }
 
-/** On a Space's page: who has voted, and sending, replacing or stopping its link. */
-export function VoteStatus({ space, people, results, onNewVote, onStop }) {
+/**
+ * On a Space's page: who has voted, and sending, replacing or ending its vote. Ending keeps the votes
+ * on this phone and deletes the link from the server; clearing forgets them here too.
+ */
+export function VoteStatus({ space, people, results, onNewVote, onEnd, onReview, onClear }) {
   const [sharing, setSharing] = useState(false)
-  const [askStop, setAskStop] = useState(false)
+  const [asking, setAsking] = useState(null) // 'end' or 'clear'
   const [problem, setProblem] = useState(null)
+  const link = space.voteLink
   const { voted, waiting } = turnout(space, results)
+  const ended = Boolean(link.final)
   return (
     <VStack gap={2} className="declutter-resume">
       <Heading level={2}>Family vote</Heading>
-      <Text as="p" color="secondary">{countLabel(space.voteLink.itemIds.length)} · sent {voteDay(space.voteLink.createdAt)} · open until {voteDay(space.voteLink.expiresAt)}</Text>
-      {results && <Text as="p">{voted.length ? `Voted: ${voted.join(', ')}` : 'No votes yet.'}{waiting.length ? ` · Waiting for ${waiting.join(', ')}` : ''}</Text>}
+      <Text as="p" color="secondary">
+        {countLabel(link.itemIds.length)} · sent {voteDay(link.createdAt)} · {ended ? `ended ${voteDay(link.final.endedAt)}` : `open until ${voteDay(link.expiresAt)}`}
+      </Text>
+      {results && <Text as="p">{voted.length ? `Voted: ${voted.join(', ')}` : 'No votes yet.'}{waiting.length ? ` · ${ended ? 'Didn\'t vote' : 'Waiting for'} ${waiting.join(', ')}` : ''}</Text>}
       {sharing ? <ShareVoteLink space={space} people={people} /> : (
         <HStack gap={2}>
-          <Button label="Send again" size="sm" onClick={() => setSharing(true)} />
-          <Button label="New vote" size="sm" onClick={onNewVote} />
-          <Button label="Stop" variant="ghost" size="sm" onClick={() => setAskStop(true)} />
+          <Button label="Review results" size="sm" isDisabled={!voted.length} onClick={onReview} />
+          {!ended && <Button label="Send again" size="sm" onClick={() => setSharing(true)} />}
+          {!ended && <Button label="End vote" variant="ghost" size="sm" onClick={() => setAsking('end')} />}
+          {ended && <Button label="New vote" size="sm" onClick={onNewVote} />}
+          {ended && <Button label="Clear" variant="ghost" size="sm" onClick={() => setAsking('clear')} />}
         </HStack>
       )}
       <AlertDialog
-        isOpen={askStop}
-        onOpenChange={setAskStop}
-        title="Stop this vote?"
-        description="The link stops working, and it and its votes are deleted from the Spaces server. Your decisions stay."
-        actionLabel="Stop and delete"
+        isOpen={asking === 'end'}
+        onOpenChange={open => setAsking(open ? 'end' : null)}
+        title="End the vote?"
+        description="Voting closes and the link is deleted from the Spaces server. The votes so far stay on this phone, on each item."
+        actionLabel="End and keep votes"
+        actionVariant="primary"
         onAction={async () => {
-          setAskStop(false)
-          try { await onStop() } catch (err) { setProblem(`Couldn't stop it. ${err.message}`) }
+          setAsking(null)
+          try { await onEnd() } catch (err) { setProblem(`Couldn't end it. ${err.message}`) }
         }}
+      />
+      <AlertDialog
+        isOpen={asking === 'clear'}
+        onOpenChange={open => setAsking(open ? 'clear' : null)}
+        title="Clear these votes?"
+        description="The family's votes are removed from this phone. Your decisions stay."
+        actionLabel="Clear votes"
+        onAction={() => { setAsking(null); onClear() }}
       />
       {problem && <Text as="p" role="alert">{problem}</Text>}
     </VStack>
