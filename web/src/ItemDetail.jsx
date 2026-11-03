@@ -15,7 +15,7 @@ import { categoryOf, CATEGORIES } from './spaceItems.js'
 import './Inventory.css'
 
 /** One item: its decision, and when it's for sale, the photos and details a listing needs. */
-export default function ItemDetail({ space, item, onChange, onBack, onSave, backLabel, autoDraft, familyVotes, onAskFamily }) {
+export default function ItemDetail({ space, item, onChange, onBack, onSave, backLabel, autoDraft, familyVotes, inOpenVote, onAskFamily }) {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const category = CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
@@ -54,8 +54,15 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
           {DECISIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
         </SegmentedControl>
         <VStack gap={1} hAlign="start">
-          {familyVotes && <Text type="label">Family votes: {familyVotes}</Text>}
-          <Button label="Ask family to vote" size="sm" onClick={onAskFamily} />
+          {/* While its vote is open, the vote screen on the Space is where it's sent, ended or replaced. */}
+          {inOpenVote
+            ? <Text type="label">In the family vote · {familyVotes}</Text>
+            : (
+              <>
+                {familyVotes && <Text type="label">Family votes: {familyVotes}</Text>}
+                <Button label="Ask family to vote" size="sm" onClick={onAskFamily} />
+              </>
+            )}
         </VStack>
       </VStack>
 

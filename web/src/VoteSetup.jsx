@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { CheckboxList, CheckboxListItem } from '@astryxdesign/core/CheckboxList'
@@ -12,7 +11,7 @@ import { VStack } from '@astryxdesign/core/VStack'
 import { createVoteLink } from './api.js'
 import { phoneNumber } from './phone.js'
 import { shareItem } from './share.js'
-import { countLabel, sortItems } from './spaceItems.js'
+import { sortItems } from './spaceItems.js'
 import { MAX_VOTE_ITEMS, linkPayload, turnout, voteDay, voteMessage, voteUrl } from './votes.js'
 import './Inventory.css'
 
@@ -21,7 +20,7 @@ const whatsappTo = (phone, text) => `https://wa.me/${phone.replace(/\D/g, '')}?t
 const fullNumber = person => phoneNumber(person.phone)
 
 /** Sending the link: the share sheet, WhatsApp straight to someone with a saved number, or copying it. */
-export function ShareVoteLink({ space, people }) {
+export function ShareVoteLink({ space, people, primary = true }) {
   const [status, setStatus] = useState(null)
   const link = space.voteLink
   const message = voteMessage(space, link.id)
@@ -37,7 +36,7 @@ export function ShareVoteLink({ space, people }) {
 
   return (
     <VStack gap={2}>
-      <Button label="Share link" variant="primary" size="lg" onClick={share} />
+      <Button label={primary ? 'Share link' : 'Send link again'} variant={primary ? 'primary' : 'secondary'} size="lg" onClick={share} />
       {withPhones.map(p => (
         <Button key={p.id} label={`Send to ${p.name} on WhatsApp`} size="lg" onClick={() => { window.open(whatsappTo(fullNumber(p), message), '_blank', 'noopener'); setStatus(`Opened WhatsApp for ${p.name}.`) }} />
       ))}
@@ -47,57 +46,28 @@ export function ShareVoteLink({ space, people }) {
   )
 }
 
-/**
- * On a Space's page: who has voted, and sending, replacing or ending its vote. Ending keeps the votes
- * on this phone and deletes the link from the server; clearing forgets them here too.
- */
-export function VoteStatus({ space, people, results, onNewVote, onEnd, onReview, onClear }) {
-  const [sharing, setSharing] = useState(false)
-  const [asking, setAsking] = useState(null) // 'end' or 'clear'
-  const [problem, setProblem] = useState(null)
+/** On a Space's page: the family vote in one line, and one button for what to do next. */
+export function VoteCard({ space, results, onAsk, onOpen }) {
   const link = space.voteLink
-  const { voted, waiting } = turnout(space, results)
-  const ended = Boolean(link.final)
+  let line = 'Ask what to keep, sell or let go.'
+  let button = <Button label="Ask family to vote" variant="primary" onClick={onAsk} />
+  if (link) {
+    const { voted, waiting } = turnout(space, results)
+    line = link.final
+      ? `Ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
+      : `${voted.length ? `${andList(voted)} voted` : 'No votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
+    button = <Button label={link.final ? 'See results' : 'See votes'} variant="primary" onClick={onOpen} />
+  }
   return (
-    <VStack gap={2} className="declutter-resume">
+    <VStack gap={2} hAlign="start" className="declutter-resume">
       <Heading level={2}>Family vote</Heading>
-      <Text as="p" color="secondary">
-        {countLabel(link.itemIds.length)} · sent {voteDay(link.createdAt)} · {ended ? `ended ${voteDay(link.final.endedAt)}` : `open until ${voteDay(link.expiresAt)}`}
-      </Text>
-      {results && <Text as="p">{voted.length ? `Voted: ${voted.join(', ')}` : 'No votes yet.'}{waiting.length ? ` · ${ended ? 'Didn\'t vote' : 'Waiting for'} ${waiting.join(', ')}` : ''}</Text>}
-      {sharing ? <ShareVoteLink space={space} people={people} /> : (
-        <HStack gap={2}>
-          <Button label="Review results" size="sm" isDisabled={!voted.length} onClick={onReview} />
-          {!ended && <Button label="Send again" size="sm" onClick={() => setSharing(true)} />}
-          {!ended && <Button label="End vote" variant="ghost" size="sm" onClick={() => setAsking('end')} />}
-          {ended && <Button label="New vote" size="sm" onClick={onNewVote} />}
-          {ended && <Button label="Clear" variant="ghost" size="sm" onClick={() => setAsking('clear')} />}
-        </HStack>
-      )}
-      <AlertDialog
-        isOpen={asking === 'end'}
-        onOpenChange={open => setAsking(open ? 'end' : null)}
-        title="End the vote?"
-        description="Voting closes and the link is deleted from the Spaces server. The votes so far stay on this phone, on each item."
-        actionLabel="End and keep votes"
-        actionVariant="primary"
-        onAction={async () => {
-          setAsking(null)
-          try { await onEnd() } catch (err) { setProblem(`Couldn't end it. ${err.message}`) }
-        }}
-      />
-      <AlertDialog
-        isOpen={asking === 'clear'}
-        onOpenChange={open => setAsking(open ? 'clear' : null)}
-        title="Clear these votes?"
-        description="The family's votes are removed from this phone. Your decisions stay."
-        actionLabel="Clear votes"
-        onAction={() => { setAsking(null); onClear() }}
-      />
-      {problem && <Text as="p" role="alert">{problem}</Text>}
+      <Text as="p" color="secondary">{line}</Text>
+      {button}
     </VStack>
   )
 }
+
+const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
 
 /**
  * Making a family vote link for one Space: choose the items (all, or the ones passed in) and who can

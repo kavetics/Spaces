@@ -30,7 +30,7 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, onAskFamily, voteStatus, onSelling }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -328,7 +328,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       ))}
 
       {inSpace.length === 0 && <Button label="Add an item" onClick={() => setAddingItem(true)} />}
-      {inSpace.length > 0 && (voteStatus || <Button label="Ask family to vote" size="lg" onClick={onAskFamily} />)}
+      {inSpace.length > 0 && voteCard}
       {inSpace.length > 0 && (
         <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" size="lg" onClick={onDeclutter} />
       )}

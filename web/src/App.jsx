@@ -11,14 +11,16 @@ import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace 
 import SpacePicker from './SpacePicker.jsx'
 import Selling from './Selling.jsx'
 import SpacesPage from './SpacesPage.jsx'
-import VoteSetup, { VoteStatus } from './VoteSetup.jsx'
+import VoteSetup, { VoteCard } from './VoteSetup.jsx'
 import VoteReview from './VoteReview.jsx'
-import { resultsFor, tally, tallyLine } from './votes.js'
+import { resultsFor, tally, tallyLine, topPick } from './votes.js'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { makePictures, needsPictures } from './crop.js'
 import { categoryOf, sortItems } from './spaceItems.js'
 import { askMotionPermission } from './sweep.js'
 import Welcome from './Welcome.jsx'
+
+const isDecided = status => ['keep', 'sell', 'donate', 'trash'].includes(status)
 
 // The scanner loads separately, so the welcome screen's loading is real.
 const loadScanner = () => import('./Camera.jsx')
@@ -270,7 +272,8 @@ export default function App() {
 
   const askFamily = (preselect = null, from = 'space') => { setVoteSetup({ preselect, from }); setScreen('vote-setup') }
 
-  // Ending a vote: take the latest votes, keep them on the phone, and delete the link from the server.
+  // Ending a vote: take the latest votes, keep them on the phone, delete the link from the server, and
+  // give each undecided item the family's top pick. What each item had before is kept, for Undo.
   async function endVote(space) {
     const { voteLink: link } = space
     const gone = err => err.status === 404 || err.status === 410
@@ -285,13 +288,27 @@ export default function App() {
     } catch (err) {
       if (!gone(err)) throw err
     }
-    change(space.id, s => ({ ...s, voteLink: { ...s.voteLink, final: { votes, endedAt: new Date().toISOString() } } }))
-    setScreen('vote-review')
+    const final = { votes, endedAt: new Date().toISOString() }
+    const endedLink = { ...link, final }
+    const picks = {}
+    for (const item of space.result.items) {
+      if (!link.itemIds.includes(item.id) || isDecided(item.status)) continue
+      const pick = topPick(tally({ ...space, voteLink: endedLink }, final, item.id))
+      if (pick) picks[item.id] = pick
+    }
+    const applied = Object.fromEntries(Object.keys(picks).map(id => [id, space.result.items.find(i => String(i.id) === id).status ?? null]))
+    change(space.id, s => ({
+      ...s,
+      voteLink: { ...s.voteLink, final: { ...final, applied } },
+      result: { ...s.result, items: s.result.items.map(i => (picks[i.id] ? { ...i, status: picks[i.id], updatedAt: final.endedAt } : i)) },
+    }))
   }
 
-  function clearVote(space) {
-    change(space.id, ({ voteLink: _, ...s }) => s)
-    setVoteResults(({ [space.id]: _, ...rest }) => rest)
+  // Puts back what an item had before the family's pick was used.
+  function undoPick(space, itemId) {
+    const { [itemId]: before, ...rest } = space.voteLink.final.applied
+    updateItem(space.id, itemId, { status: before ?? undefined })
+    change(space.id, s => ({ ...s, voteLink: { ...s.voteLink, final: { ...s.voteLink.final, applied: rest } } }))
   }
 
   const familyVotes = (space, itemId) => tallyLine(tally(space, resultsFor(space, voteResults[space.id]), itemId))
@@ -445,18 +462,7 @@ export default function App() {
           onSelling={() => openSelling(open.id, 'space')}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
-          onAskFamily={() => askFamily()}
-          voteStatus={open.voteLink && (
-            <VoteStatus
-              space={open}
-              people={people}
-              results={resultsFor(open, voteResults[open.id])}
-              onNewVote={() => askFamily()}
-              onEnd={() => endVote(open)}
-              onReview={() => setScreen('vote-review')}
-              onClear={() => clearVote(open)}
-            />
-          )}
+          voteCard={<VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} />}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
@@ -473,8 +479,9 @@ export default function App() {
           item={openItem}
           onChange={patch => updateItem(open.id, openItem.id, patch)}
           familyVotes={familyVotes(open, openItem.id)}
+          inOpenVote={isOpenVote(open) && open.voteLink.itemIds.includes(openItem.id)}
           onAskFamily={() => askFamily([openItem.id], 'item')}
-          backLabel={{ selling: 'For sale & letting go', 'vote-review': 'Family vote results' }[itemFrom] ?? (itemFrom ? 'Ask Muse' : undefined)}
+          backLabel={{ selling: 'For sale & letting go', 'vote-review': open.voteLink?.final ? 'Family vote results' : 'Family vote' }[itemFrom] ?? (itemFrom ? 'Ask Muse' : undefined)}
           autoDraft={Boolean(itemFrom?.startsWith('ask'))} // from Ask Muse, its listing starts drafting
           onBack={() => setScreen(itemFrom ?? 'space')}
           onSave={() => {
@@ -516,8 +523,12 @@ export default function App() {
       {screen === 'vote-review' && open?.voteLink && (
         <VoteReview
           space={open}
+          people={people}
           results={resultsFor(open, voteResults[open.id])}
-          onDecide={(itemId, status) => updateItem(open.id, itemId, { status })}
+          onEnd={() => endVote(open)}
+          onUse={(itemId, status) => updateItem(open.id, itemId, { status })}
+          onUndo={itemId => undoPick(open, itemId)}
+          onNewVote={() => askFamily(null, 'vote-review')}
           onOpenItem={itemId => { setOpenItemId(itemId); setItemFrom('vote-review'); setScreen('item') }}
           onBack={() => setScreen('space')}
         />
