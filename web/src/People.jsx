@@ -42,6 +42,26 @@ export default function People({ people, spaces, onChange, onBack }) {
     }
   }
 
+  // Adding or editing someone is its own page; Back, saving or removing returns to the list.
+  if (editing) {
+    return (
+      <PersonForm
+        person={editing === 'new' ? null : editing}
+        spaces={spaces}
+        onClose={() => setEditing(null)}
+        onSave={fields => {
+          onChange(editing === 'new' ? [...people, { id: newId(), ...fields }] : people.map(p => (p.id === editing.id ? { ...p, ...fields } : p)))
+          setEditing(null)
+        }}
+        onRemove={() => {
+          onChange(people.filter(p => p.id !== editing.id))
+          toast({ body: `Removed ${editing.name}`, autoHideDuration: 3000 })
+          setEditing(null)
+        }}
+      />
+    )
+  }
+
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack><IconButton label="Back" icon={<Icon icon="chevronLeft" />} onClick={onBack} /></HStack>
@@ -78,22 +98,6 @@ export default function People({ people, spaces, onChange, onBack }) {
         {importProblem && <Text as="p" role="alert">{importProblem}</Text>}
       </VStack>
 
-      {editing && (
-        <PersonForm
-          person={editing === 'new' ? null : editing}
-          spaces={spaces}
-          onClose={() => setEditing(null)}
-          onSave={fields => {
-            onChange(editing === 'new' ? [...people, { id: newId(), ...fields }] : people.map(p => (p.id === editing.id ? { ...p, ...fields } : p)))
-            setEditing(null)
-          }}
-          onRemove={() => {
-            onChange(people.filter(p => p.id !== editing.id))
-            toast({ body: `Removed ${editing.name}`, autoHideDuration: 3000 })
-            setEditing(null)
-          }}
-        />
-      )}
     </VStack>
   )
 }

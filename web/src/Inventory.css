@@ -53,3 +53,7 @@ button.astryx-collapsible-trigger.astryx-collapsible-trigger { background-color:
 
 /* Let go matches the Delete button's red. */
 .let-go-tag { background-color: var(--color-error-muted); color: var(--color-text-error); }
+
+/* A page that scrolls the document itself rather than a fixed box, for forms where iPhone Safari misplaces
+   the cursor inside a fixed scrolling container. */
+.page { min-height: 100dvh; background: var(--color-background-body); }

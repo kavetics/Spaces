@@ -62,13 +62,15 @@ export function VoteCard({ space, results, onAsk, onOpen }) {
     ? `Ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
     : `${voted.length ? `${andList(voted)} voted` : 'No votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
   return (
-    <HStack gap={2} vAlign="center" hAlign="between">
-      <VStack gap={0}>
+    // The button sits on the title's row and the line wraps below at full width, so a long list of names
+    // can't squeeze the button.
+    <VStack gap={1}>
+      <HStack gap={2} vAlign="center" hAlign="between">
         <Text as="p">Family vote</Text>
-        <Text as="p" type="supporting" color="secondary">{line}</Text>
-      </VStack>
-      <Button label={link.final ? 'See results' : 'See votes'} onClick={onOpen} />
-    </HStack>
+        <Button label={link.final ? 'See results' : 'See votes'} onClick={onOpen} />
+      </HStack>
+      <Text as="p" type="supporting" color="secondary">{line}</Text>
+    </VStack>
   )
 }
 
