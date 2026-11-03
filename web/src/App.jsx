@@ -365,7 +365,6 @@ export default function App() {
           }}
           onAddItem={fields => addItem(open.id, fields)}
           onBack={() => setScreen('spaces')}
-          onAsk={() => setScreen('ask-space')}
           onDeclutter={() => setScreen('declutter')}
           declutterLeft={leftToDeclutter[open.id]}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
@@ -400,8 +399,6 @@ export default function App() {
         <Declutter key={open.id} space={open} onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)} onExit={() => setScreen('space')} />
       )}
 
-      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}
-      {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} onDraftListing={draftFromChat} />}
-    </>
+      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}    </>
   )
 }

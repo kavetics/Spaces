@@ -42,8 +42,6 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
         {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
       </List>
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
-      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}
-      {spaces.some(s => s.result) && <Text as="p" color="secondary" justify="center">Open a Space to declutter it.</Text>}
-    </VStack>
+      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}    </VStack>
   )
 }

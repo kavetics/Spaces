@@ -11,7 +11,7 @@ The repo and hosted service are still named `room-rush`, from an earlier idea. T
 2. **Scan:** 8 guided photos taken automatically when the phone is lined up and still.
 3. **Build the inventory:** Muse Spark names the items in each photo, SAM 3.1 outlines them, and Muse Spark merges repeats across photos. Plain code checks merges, counts quantities and picks each item's crop.
 4. **Sort it:** items go into 8 categories. Things outside the Space go under "Also spotted nearby". People add or remove items.
-5. **Ask Muse:** chat about one Space or all of them. Answers cite items, and a citation opens the scan photo with the item outlined.
+5. **Ask Muse:** chat about all your Spaces at once. Answers cite items, and a citation opens the scan photo with the item outlined.
 
 Planned: sell listings, memories on items, correcting items, shared voting, and a connection to the Muse app. See `docs/TODO.md`.
 

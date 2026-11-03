@@ -349,3 +349,7 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Done:** Declutter starts from a Space's page ("Declutter this Space") and goes straight to its first item. Each Space keeps its own place to resume, and Your Spaces shows "N left to decide" or "All decided" per Space. The Spaces picker is gone.
 - **Decisions:** one room at a time is easier to follow and to finish than one session across Spaces. The family vote link will follow it: one Space per link. A rescan or delete forgets that Space's place, since item ids start over.
 - **Next:** People (household list), then the family vote link.
+
+## 2026-11-02: One Ask Muse, Add next to the inventory
+- **Done:** removed Ask Muse from each Space's page; the chat on Your Spaces covers every Space. Declutter this Space is now the Space page's main button. "Add an item" sits on the Digital inventory heading row.
+- **Decisions:** one chat is simpler, and Muse already sees every Space in it, so a question about one room still works ("in the living room, ...").

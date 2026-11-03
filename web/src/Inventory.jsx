@@ -30,7 +30,7 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onAsk, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -196,9 +196,10 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
     />
   )
   // Sections stay as they were left. The big ones start closed to keep the page short.
-  const section = (key, title, children, level = 2) => (
+  const section = (key, title, children, level = 2, className) => (
     <Collapsible
       key={key}
+      className={className}
       isOpen={openSections[key] ?? !STARTS_CLOSED.includes(key)}
       onOpenChange={open => onSectionToggle(key, open)}
       trigger={<Heading level={level}>{title}</Heading>}
@@ -282,7 +283,11 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         </VStack>
       )}
       {inSpace.length > 0 && <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>}
-      {inSpace.length > 0 && section(INVENTORY, `Digital inventory (${inSpace.length})`, (
+      {inSpace.length > 0 && (
+        // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
+        <VStack className="inventory-with-action">
+          <Button label="Add an item" size="sm" className="inventory-action" onClick={() => setAddingItem(true)} />
+          {section(INVENTORY, `Digital inventory (${inSpace.length})`, (
         <VStack gap={3}>
           {CATEGORIES.map(([id, label]) => {
             const inCategory = inSpace.filter(i => categoryOf(i) === id)
@@ -294,7 +299,9 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
             ), 3)
           })}
         </VStack>
-      ))}
+          ), 2, 'inventory-action-trigger')}
+        </VStack>
+      )}
 
       {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
         <VStack gap={3}>
@@ -314,11 +321,10 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         </VStack>
       ))}
 
-      <Button label="Add an item" onClick={() => setAddingItem(true)} />
+      {inSpace.length === 0 && <Button label="Add an item" onClick={() => setAddingItem(true)} />}
       {inSpace.length > 0 && (
-        <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} size="lg" onClick={onDeclutter} />
+        <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" size="lg" onClick={onDeclutter} />
       )}
-      <Button label={`Ask Muse about ${spaceName}`} variant="primary" size="lg" onClick={onAsk} />
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>
