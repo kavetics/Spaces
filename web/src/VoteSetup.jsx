@@ -145,7 +145,7 @@ export default function VoteSetup({ space, people, preselect, onCreated, onBack,
       {top}
       <VStack gap={1}>
         <Heading level={1}>Ask family to vote</Heading>
-        <Text as="p" color="secondary">They'll vote Keep, Sell, Let go or Unsure on each item. Votes are advice; you still decide.</Text>
+        <Text as="p" color="secondary">They'll vote Keep, Sell or Let go on each item, and can skip any. Votes are advice; you still decide.</Text>
       </VStack>
       {space.voteLink && <Banner status="warning" title={`This replaces the link you sent on ${voteDay(space.voteLink.createdAt)}.`} description="Its votes are deleted." />}
 

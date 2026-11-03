@@ -1,7 +1,7 @@
 // Family votes: what goes into a vote link, and counting what came back. Counting is plain code.
 import { votePicture } from './crop.js'
 
-export const VOTE_CHOICES = [['keep', 'Keep'], ['sell', 'Sell'], ['donate', 'Let go'], ['unsure', 'Unsure']]
+export const VOTE_CHOICES = [['keep', 'Keep'], ['sell', 'Sell'], ['donate', 'Let go']]
 export const MAX_VOTE_ITEMS = 25
 const choiceLabel = choice => VOTE_CHOICES.find(([id]) => id === choice)?.[1]
 
@@ -27,7 +27,7 @@ export async function linkPayload(space, items, voters) {
   }
 }
 
-/** The family's votes on one item, most votes first. "Unsure" doesn't count as a vote. */
+/** The family's votes on one item, most votes first. Items someone skipped don't count. */
 export function tally(space, results, itemId) {
   const link = space.voteLink
   if (!link || !results || !link.itemIds.includes(itemId)) return null
@@ -35,7 +35,7 @@ export function tally(space, results, itemId) {
   const byChoice = {}
   for (const { voterId, answers } of results.votes) {
     const choice = answers[String(itemId)]
-    if (!choice || choice === 'unsure' || !names[voterId]) continue
+    if (!choice || !names[voterId]) continue
     ;(byChoice[choice] ??= []).push(names[voterId])
   }
   return Object.entries(byChoice)

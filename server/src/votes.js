@@ -1,5 +1,5 @@
 // Family vote links. The owner sends a few items from one Space; people on their household list pick
-// their name and vote Keep, Sell, Let go or Unsure. Votes are advice: the owner still decides.
+// their name and vote Keep, Sell or Let go, or skip an item. Votes are advice: the owner still decides.
 // Stored in Supabase: item names, small pictures, asking prices and voters' names. Nothing else.
 // Each link expires after 14 days, and the owner can delete it sooner.
 import { createHash, randomBytes } from 'node:crypto';
@@ -10,7 +10,7 @@ export const LINK_DAYS = 14;
 export const MAX_ITEMS = 25;
 export const MAX_VOTERS = 12;
 export const MAX_PICTURE = 120_000; // characters of a data URL, about 90 KB of JPEG
-export const CHOICES = ['keep', 'sell', 'donate', 'unsure'];
+export const CHOICES = ['keep', 'sell', 'donate'];
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
 const text = (value, max) => String(value ?? '').trim().slice(0, max);
@@ -77,7 +77,7 @@ export function cleanLink(body) {
   return { space_name: text(body.spaceName, 60) || 'Our home', items: cleanItems, voters: cleanVoters };
 }
 
-/** Only known items and known choices; "Unsure" is kept so it shows when they come back. */
+/** Only known items and known choices. Skipped items are simply left out. */
 export function cleanAnswers(answers, link) {
   const refs = new Set(link.items.map(i => i.ref));
   return Object.fromEntries(Object.entries(answers && typeof answers === 'object' ? answers : {})

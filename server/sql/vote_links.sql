@@ -14,7 +14,7 @@ create table if not exists vote_links (
 create table if not exists vote_answers (
   link_id text not null references vote_links(id) on delete cascade,
   voter_id text not null,
-  answers jsonb not null,         -- { item ref: 'keep' | 'sell' | 'donate' | 'unsure' }
+  answers jsonb not null,         -- { item ref: 'keep' | 'sell' | 'donate' }
   updated_at timestamptz not null default now(),
   primary key (link_id, voter_id)
 );

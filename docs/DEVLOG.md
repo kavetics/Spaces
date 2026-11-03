@@ -369,3 +369,7 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-02: Phone numbers in full international form
 - **Done:** the person form checks phone numbers and shows "For WhatsApp: +1 512 555 0101" as you type. A number that can't be a full one (like "555 0101") is refused with an example. Contact imports and the WhatsApp button use the same rules.
 - **Decisions:** numbers are saved as + country code + digits, the form WhatsApp links need. One assumption only: a 10-digit number without a country code is a US number. Older saved numbers that aren't full get no WhatsApp button, rather than a link to the wrong person.
+
+## 2026-11-02: Votes are Keep, Sell or Let go
+- **Done:** removed "Unsure" from family votes. Voters skip an item instead; skipped items count no vote. The server no longer accepts it.
+- **Decisions:** it added a tap without telling the owner anything a skip doesn't.
