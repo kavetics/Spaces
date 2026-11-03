@@ -67,9 +67,9 @@ export default function People({ people, spaces, onChange, onBack }) {
         : <Text as="p" color="secondary">No one yet.</Text>}
 
       <VStack gap={2}>
-        <Button label="Add a person" variant="primary" size="lg" onClick={() => setEditing('new')} />
+        <Button label="Add a person" variant="primary" onClick={() => setEditing('new')} />
         {canImport()
-          ? <Button label="Import from contacts" size="lg" onClick={importContacts} />
+          ? <Button label="Import from contacts" onClick={importContacts} />
           : (
             <Text as="p" type="supporting" color="secondary">
               Importing from contacts works in Chrome on Android. On iPhone, turn on Safari's Contact Picker API under Settings, Apps, Safari, Advanced, Feature Flags, then open Spaces in Safari.

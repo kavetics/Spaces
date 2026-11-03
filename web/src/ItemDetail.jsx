@@ -22,7 +22,7 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
     <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
         <IconButton label={backLabel ?? space.spaceName} icon={<Icon icon="chevronLeft" />} onClick={onBack} />
-        <Button label="Edit" size="sm" onClick={() => setEditing(true)} />
+        <Button label="Edit" onClick={() => setEditing(true)} />
       </HStack>
       <VStack gap={3}>
         {item.picture && <img className="item-photo" src={item.picture} alt={item.name} />}
@@ -58,7 +58,7 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
             : (
               <>
                 {familyVotes && <Text type="label">Family votes: {familyVotes}</Text>}
-                <Button label="Ask family to vote" size="sm" onClick={onAskFamily} />
+                <Button label="Ask family to vote" onClick={onAskFamily} />
               </>
             )}
         </VStack>
@@ -67,7 +67,7 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
       {item.status === 'sell' && <SellForm item={item} onChange={onChange} autoDraft={autoDraft} />}
 
       {/* Changes are kept as they're made, so this only finishes; no "Save" that needs explaining. */}
-      <Button label="Done" variant="primary" size="lg" onClick={onSave} />
+      <Button label="Done" variant="primary" onClick={onSave} />
     </VStack>
   )
 }

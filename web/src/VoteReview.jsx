@@ -50,7 +50,7 @@ export default function VoteReview({ space, people, results, onEnd, onUse, onUnd
     if (!ended) return null
     const label = String(item.id) in applied && current === pick ? 'Undo' : pick && pick !== current ? `Use ${choiceLabel(pick)}` : null
     if (!label) return null
-    return <Button label={label} aria-label={`${label}: ${item.name}`} size="sm" variant="ghost" onClick={() => (label === 'Undo' ? onUndo(item.id) : onUse(item.id, pick))} />
+    return <Button label={label} aria-label={`${label}: ${item.name}`} variant="ghost" onClick={() => (label === 'Undo' ? onUndo(item.id) : onUse(item.id, pick))} />
   }
 
   return (
@@ -88,7 +88,7 @@ export default function VoteReview({ space, people, results, onEnd, onUse, onUnd
         <VStack gap={3}>
           <ShareVoteLink space={space} people={people} primary={false} />
           <VStack gap={1}>
-            <Button label="End vote and use top picks" variant="primary" size="lg" isLoading={ending} onClick={end} />
+            <Button label="End vote and use top picks" variant="primary" isLoading={ending} onClick={end} />
             <Text as="p" type="supporting" color="secondary" justify="center">
               Voting closes and the link is deleted. Items you haven't decided get the family's top pick; ties and your own decisions stay. You can undo each one.
             </Text>
@@ -98,7 +98,7 @@ export default function VoteReview({ space, people, results, onEnd, onUse, onUnd
       )}
       {ended && (
         <VStack gap={1}>
-          <Button label="Start a new vote" size="lg" onClick={onNewVote} />
+          <Button label="Start a new vote" onClick={onNewVote} />
           <Text as="p" type="supporting" color="secondary" justify="center">A new vote replaces these results.</Text>
         </VStack>
       )}

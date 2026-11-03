@@ -40,7 +40,7 @@ export default function ScanGuide({ isOpen, onClose }) {
               <Text as="p">Stand in the middle of the open area and turn slowly all the way around.</Text>
               <Text as="p">If you can't see the whole Space from one spot, like an L-shaped backyard or an open-plan room, scan once from each part. You'll be asked after each scan.</Text>
               <Text as="p">For hidden spots, like behind a shed or inside a closet, add photos instead. Good light helps.</Text>
-              <Button label="Got it" variant="primary" size="lg" onClick={onClose} />
+              <Button label="Got it" variant="primary" onClick={onClose} />
             </VStack>
           </LayoutContent>
         }

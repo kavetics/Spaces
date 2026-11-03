@@ -58,7 +58,7 @@ export default function Welcome({ loadScanner, onAccept }) {
           </VStack>
           {showButton && (
             <Center className="welcome-button">
-              <Button label="Scan your first Space" variant="primary" size="lg" onClick={() => setAskConsent(true)} />
+              <Button label="Scan your first Space" variant="primary" onClick={() => setAskConsent(true)} />
             </Center>
           )}
         </VStack>

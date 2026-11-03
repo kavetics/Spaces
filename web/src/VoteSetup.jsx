@@ -36,9 +36,9 @@ export function ShareVoteLink({ space, people, primary = true }) {
 
   return (
     <VStack gap={2}>
-      <Button label={primary ? 'Share link' : 'Send link again'} variant={primary ? 'primary' : 'secondary'} size="lg" onClick={share} />
+      <Button label={primary ? 'Share link' : 'Send link again'} variant={primary ? 'primary' : 'secondary'} onClick={share} />
       {withPhones.map(p => (
-        <Button key={p.id} label={`Send to ${p.name} on WhatsApp`} size="lg" onClick={() => { window.open(whatsappTo(fullNumber(p), message), '_blank', 'noopener'); setStatus(`Opened WhatsApp for ${p.name}.`) }} />
+        <Button key={p.id} label={`Send to ${p.name} on WhatsApp`} onClick={() => { window.open(whatsappTo(fullNumber(p), message), '_blank', 'noopener'); setStatus(`Opened WhatsApp for ${p.name}.`) }} />
       ))}
       <Button label="Copy link" variant="ghost" onClick={copy} />
       {status && <Text as="p" role="status">{status}</Text>}
@@ -53,7 +53,7 @@ export function VoteCard({ space, results, onAsk, onOpen }) {
     return (
       <HStack gap={2} vAlign="center" hAlign="between">
         <Text as="p">Family vote</Text>
-        <Button label="Ask family" size="sm" onClick={onAsk} />
+        <Button label="Ask family" onClick={onAsk} />
       </HStack>
     )
   }
@@ -67,7 +67,7 @@ export function VoteCard({ space, results, onAsk, onOpen }) {
         <Text as="p">Family vote</Text>
         <Text as="p" type="supporting" color="secondary">{line}</Text>
       </VStack>
-      <Button label={link.final ? 'See results' : 'See votes'} size="sm" onClick={onOpen} />
+      <Button label={link.final ? 'See results' : 'See votes'} onClick={onOpen} />
     </HStack>
   )
 }
@@ -128,7 +128,7 @@ export default function VoteSetup({ space, people, preselect, onCreated, onBack,
           <Heading level={1}>Ask family to vote</Heading>
           <Text as="p" color="secondary">Only people on your list can vote. Add the people you live with first.</Text>
         </VStack>
-        <Button label="Add people" variant="primary" size="lg" onClick={onPeople} />
+        <Button label="Add people" variant="primary" onClick={onPeople} />
       </VStack>
     )
   }
@@ -145,7 +145,7 @@ export default function VoteSetup({ space, people, preselect, onCreated, onBack,
       <VStack gap={2}>
         <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={2}>Items ({itemIds.length})</Heading>
-          <Button label={itemIds.length === items.length ? 'Clear all' : 'Choose all'} variant="ghost" size="sm" onClick={() => setItemIds(itemIds.length === items.length ? [] : items.map(i => String(i.id)))} />
+          <Button label={itemIds.length === items.length ? 'Clear all' : 'Choose all'} variant="ghost" onClick={() => setItemIds(itemIds.length === items.length ? [] : items.map(i => String(i.id)))} />
         </HStack>
         <CheckboxList label="Items to vote on" value={itemIds} onChange={setItemIds}>
           {items.map(i => <CheckboxListItem key={i.id} value={String(i.id)} label={i.name} description={i.details?.askingPrice ? `Asking $${i.details.askingPrice}` : undefined} />)}
@@ -165,7 +165,7 @@ export default function VoteSetup({ space, people, preselect, onCreated, onBack,
       </VStack>
       {/* Above the button, where it's seen: below it, the message fell off the bottom of the screen. */}
       {problem && <Banner status="error" title="The link wasn't made." description={problem} />}
-      <Button label="Create vote link" variant="primary" size="lg" isDisabled={!ready} isLoading={creating} onClick={create} />
+      <Button label="Create vote link" variant="primary" isDisabled={!ready} isLoading={creating} onClick={create} />
     </VStack>
   )
 }

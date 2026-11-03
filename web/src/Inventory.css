@@ -5,18 +5,18 @@
   width: 4rem;
   height: 4rem;
   object-fit: cover;
-  border-radius: var(--radius-md);
-  background: var(--color-background-muted);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
 }
 .space-picker { width: 100%; max-width: 28rem; }
-.item-photo { display: block; width: 100%; max-height: 40dvh; object-fit: contain; border-radius: var(--radius-md); background: var(--color-background-muted); }
-.item-sale-photo { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-md); }
+.item-photo { display: block; width: 100%; max-height: 40dvh; object-fit: contain; border-radius: var(--radius-element); }
+.item-sale-photo { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-element); }
 .declutter-progress { flex: 1; min-width: 0; }
 .declutter-choices > * { flex: 1; }
 .declutter-blank { display: block; aspect-ratio: 4 / 3; }
-.declutter-resume { padding: var(--spacing-4); border-radius: var(--radius-md); background: var(--color-background-muted); }
+.declutter-resume { padding: var(--spacing-4); border-radius: var(--radius-element); }
 .guide-art { display: block; width: 100%; height: auto; }
-.guide-room { fill: var(--color-background-muted); stroke: var(--color-border-emphasized); stroke-width: 1.5; }
+.guide-room { fill: var(--color-background-surface); stroke: var(--color-border-emphasized); stroke-width: 1.5; }
 .guide-spot { fill: var(--color-accent); }
 .guide-turn { fill: none; stroke: var(--color-accent); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .guide-label { fill: var(--color-text-primary); font-size: 12px; }
@@ -25,8 +25,10 @@
 .inventory-action { position: absolute; inset-block-start: calc(var(--spacing-1) * -1); inset-inline-end: 0; z-index: 1; }
 .inventory-action-trigger > button[aria-expanded] { padding-inline-end: calc(var(--inventory-action-width, 4rem) + var(--spacing-2)); }
 
-/* While things are being found: rings pulse inward toward the warm light, one after another. */
+/* While things are being found: rings pulse inward toward the gold light, one after another. */
 .scan-pulse { width: min(40vw, 10rem); }
+.scan-pulse-small { width: var(--spacing-10); }
+.scan-pulse-small .scan-pulse-ring { stroke-width: 3; }
 .scan-pulse-ring { fill: none; stroke: var(--color-border-emphasized); stroke-width: 1; animation: scan-pulse 2.4s ease-in-out infinite; }
 .scan-pulse-ring:nth-child(2) { animation-delay: 0.4s; }
 .scan-pulse-ring:nth-child(3) { animation-delay: 0.8s; }
@@ -38,3 +40,6 @@
 .things-list { padding-block-start: var(--spacing-4); }
 .things-category > button[aria-expanded] { padding-block: var(--spacing-2); }
 .things-list li { padding-block: var(--spacing-1); }
+
+/* Remove on each Thing: grey, so it doesn't read louder than the Thing's name. */
+.quiet-action { color: var(--color-text-secondary); }

@@ -30,10 +30,10 @@ function Resume({ space, saved, onResume, onRestart, onCancel }) {
         <Heading level={1}>Pick up where you left off</Heading>
         <Text as="p" color="secondary">{space.spaceName}: you stopped at {saved.place + 1} of {saved.stack.length} · {saved.stack.length - saved.place} left.</Text>
         <ProgressBar label="Items gone through" isLabelHidden value={saved.place} max={saved.stack.length} />
-        <Button label="Resume" variant="primary" size="lg" onClick={onResume} />
+        <Button label="Resume" variant="primary" onClick={onResume} />
       </VStack>
       <VStack gap={1}>
-        <Button label="Start over" size="lg" onClick={onRestart} />
+        <Button label="Start over" onClick={onRestart} />
         <Text as="p" type="supporting" color="secondary" justify="center">Your decisions so far are kept. Starting over just goes through every item again.</Text>
       </VStack>
     </VStack>
@@ -66,13 +66,13 @@ function Card({ space, item, place, total, canUndo, familyVotes, onDecide, onSel
       </VStack>
       <HStack gap={2} className="declutter-choices">
         {DECISIONS.map(([id, name]) => (
-          <Button key={id} label={name} size="lg" variant={current === id ? 'primary' : 'secondary'} onClick={() => onDecide(id)} />
+          <Button key={id} label={name} variant={current === id ? 'primary' : 'secondary'} onClick={() => onDecide(id)} />
         ))}
       </HStack>
       {current === 'sell' && (
         <VStack gap={4}>
           <SellForm item={item} onChange={onChange} />
-          <Button label="Next item" variant="primary" size="lg" onClick={onSellDone} />
+          <Button label="Next item" variant="primary" onClick={onSellDone} />
           <Text as="p" color="secondary" justify="center">You can add photos and details later from the item.</Text>
         </VStack>
       )}
@@ -115,7 +115,7 @@ function Summary({ space, stack, onAgain, onDone, onAskFamily, onSelling }) {
           ? <List hasDividers edge="flush">{lettingGo.map(item => row(item))}</List>
           : <Text as="p" color="secondary">Nothing to let go.</Text>}
       </VStack>
-      <Button label="Done" variant="primary" size="lg" onClick={onDone} />
+      <Button label="Done" variant="primary" onClick={onDone} />
       <Button label="See everything for sale & letting go" onClick={onSelling} />
       <Button label="Ask family to vote" onClick={onAskFamily} />
       <Button label="Go again" variant="ghost" onClick={onAgain} />

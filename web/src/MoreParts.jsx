@@ -37,9 +37,9 @@ export default function MoreParts({ space, parts, onScanAnother, onAddPhotos, on
         )}
         <input ref={input} type="file" accept="image/*" multiple hidden onChange={addFromLibrary} />
         <VStack gap={2}>
-          <Button label="Scan another part" size="lg" onClick={onScanAnother} />
-          <Button label="Add photos" size="lg" onClick={() => input.current?.click()} />
-          <Button label="Done" variant="primary" size="lg" onClick={onDone} />
+          <Button label="Scan another part" onClick={onScanAnother} />
+          <Button label="Add photos" onClick={() => input.current?.click()} />
+          <Button label="Done" variant="primary" onClick={onDone} />
         </VStack>
       </VStack>
     </Center>

@@ -80,7 +80,7 @@ export default function VotePage({ id }) {
       {!voter && (
         <VStack gap={3}>
           <Heading level={2}>Who are you?</Heading>
-          {link.voters.map(v => <Button key={v.id} label={v.name} size="lg" onClick={() => pick(v.id)} />)}
+          {link.voters.map(v => <Button key={v.id} label={v.name} onClick={() => pick(v.id)} />)}
         </VStack>
       )}
 
@@ -89,7 +89,7 @@ export default function VotePage({ id }) {
           {sent && <Banner status="success" title={`Thanks, ${name}. Your votes are in.`} description={`You can change them here until ${voteDay(link.expiresAt)}.`} />}
           <HStack gap={2} vAlign="center" hAlign="between">
             <Text type="label">Voting as {name}</Text>
-            <Button label="Not you?" variant="ghost" size="sm" onClick={() => { setVoter(null); setAnswers({}); setSent(false) }} />
+            <Button label="Not you?" variant="ghost" onClick={() => { setVoter(null); setAnswers({}); setSent(false) }} />
           </HStack>
           <VStack gap={5}>
             {link.items.map(item => (
@@ -106,7 +106,7 @@ export default function VotePage({ id }) {
             ))}
           </VStack>
           <VStack gap={2}>
-            <Button label={sent ? 'Votes sent' : 'Send my votes'} variant="primary" size="lg" isDisabled={!answered || sent} isLoading={sending} onClick={send} />
+            <Button label={sent ? 'Votes sent' : 'Send my votes'} variant="primary" isDisabled={!answered || sent} isLoading={sending} onClick={send} />
             <Text as="p" type="supporting" color="secondary" justify="center">{answered} of {link.items.length} answered. Skip any you're not sure about.</Text>
           </VStack>
         </>

@@ -14,10 +14,10 @@
   align-self: flex-end;
   max-width: 85%;
   padding: var(--spacing-2) var(--spacing-3);
-  border-radius: var(--radius-md);
-  background: var(--color-background-muted);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
 }
-.ask-muse-offer { border: var(--border-width) solid var(--color-border-emphasized); border-radius: var(--radius-md); }
+.ask-muse-offer { border: var(--border-width) solid var(--color-border-emphasized); border-radius: var(--radius-element); }
 .ask-muse-offer-text { flex: 1; min-width: 0; align-items: flex-start; }
 .ask-muse-input {
   flex: none;
@@ -40,12 +40,12 @@
 }
 /* Tall scan photos must fit on screen, and the outline is positioned against the photo itself. */
 .citation-photo { position: relative; width: fit-content; margin: 0 auto; }
-.citation-photo img { display: block; max-width: 100%; max-height: 55dvh; border-radius: var(--radius-md); }
+.citation-photo img { display: block; max-width: 100%; max-height: 55dvh; border-radius: var(--radius-element); }
 .citation-box {
   position: absolute;
   border: var(--border-width) solid var(--color-accent);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-inner);
   box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--color-background-body) 45%, transparent);
   outline: 2px solid var(--color-accent);
 }
-.citation-photo { overflow: hidden; border-radius: var(--radius-md); }
+.citation-photo { overflow: hidden; border-radius: var(--radius-element); }

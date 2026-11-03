@@ -74,7 +74,8 @@ export default function SellForm({ item, onChange, autoDraft }) {
           {salePhotos.length < MAX_SALE_PHOTOS && <Button label="Add photos" onClick={() => fileInput.current?.click()} />}
           <Button label="Fill in details with AI" variant="primary" isDisabled={!salePhotos.length} isLoading={filling} onClick={fillFromPhotos} />
         </HStack>
-        {fillError && <Text as="p" role="alert">{fillError}</Text>}
+        {!salePhotos.length && <Text as="p" type="supporting" color="secondary">Add a photo first, then AI can fill in the details.</Text>}
+        {fillError &&<Text as="p" role="alert">{fillError}</Text>}
       </VStack>
 
       {ai.size > 0 && <Banner status="info" title="Some details are from AI and may not be accurate." description="Check the ones marked AI estimate, including under More details. Changing a field makes it yours." />}

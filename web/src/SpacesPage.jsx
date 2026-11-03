@@ -55,7 +55,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
     <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
         <Heading level={1}>Your home</Heading>
-        <Button label="Scan a Space" size="sm" isDisabled={processing} onClick={onScanAnother} />
+        <Button label="Scan a Space" isDisabled={processing} onClick={onScanAnother} />
       </HStack>
 
       <Collapsible isOpen={spacesOpen} onOpenChange={open => { setSpacesOpen(open); saveOpen(open) }} trigger={<Heading level={2}>Spaces ({spaces.length})</Heading>}>
@@ -80,7 +80,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
             )
             : <Text as="p" color="secondary">Add who shares your home.</Text>}
         </VStack>
-        <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
+        <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} onClick={onPeople} />
       </HStack>
 
       <Divider />
@@ -93,7 +93,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
               : decided ? `${decided} decided, all kept` : 'Open a Space to declutter it.'}
           </Text>
         </VStack>
-        {sellingButton(spaces) && <Button label="See list" aria-label="For sale and letting go" size="sm" onClick={onSelling} />}
+        {sellingButton(spaces) && <Button label="See list" aria-label="For sale and letting go" onClick={onSelling} />}
       </HStack>
 
       {ready.length > 0 && (
@@ -106,7 +106,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
                 ? (shared.length ? `Muse in the Meta AI app can see: ${andList(shared)}.` : 'Turn on Muse in a Space to let the Meta AI app use it.')
                 : 'Ask about your things, people and decisions, across every Space.'}
             </Text>
-            <Button label="Ask Muse" variant="primary" size="lg" onClick={onAsk} />
+            <Button label="Ask Muse" variant="primary" onClick={onAsk} />
           </VStack>
         </>
       )}

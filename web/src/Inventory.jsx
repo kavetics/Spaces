@@ -21,6 +21,7 @@ import { shrinkPhoto } from './api.js'
 import { byYou, decisionLabel, decisionOf, progress as itemProgress } from './itemFields.js'
 import Initials, { peopleLabel } from './Initials.jsx'
 import ItemForm from './ItemForm.jsx'
+import ScanPulse from './ScanPulse.jsx'
 import { CATEGORIES, categoryOf, countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
@@ -186,9 +187,9 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   // Removing is immediate and real, so a mis-tap gets a few seconds to take it back.
   function remove(item) {
     const undo = onRemoveItem(item)
-    const dismiss = toast({ body: `Removed ${item.name}`, autoHideDuration: UNDO_MS, endContent: <Button label="Undo" size="sm" onClick={() => { undo(); dismiss() }} /> })
+    const dismiss = toast({ body: `Removed ${item.name}`, autoHideDuration: UNDO_MS, endContent: <Button label="Undo" onClick={() => { undo(); dismiss() }} /> })
   }
-  const action = (item, label, onClick) => <Button label={label} aria-label={`${label}: ${item.name}`} size="sm" variant="ghost" onClick={onClick} />
+  const action = (item, label, onClick) => <Button label={label} aria-label={`${label}: ${item.name}`} variant="ghost" className={label === 'Remove' ? 'quiet-action' : undefined} onClick={onClick} />
   // Full names and descriptions wrap instead of being cut off. Actions under the text leave them room.
   const row = (item, sideAction, actionsBelow) => (
     <ListItem
@@ -266,8 +267,8 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
                     <VStack gap={1}>
                       <Text as="p" type="supporting">{same ? `Same as your ${same.name}?` : item.description}</Text>
                       <HStack gap={1}>
-                        <Button label="Same item" aria-label={`Same item: ${item.name}`} size="sm" variant="ghost" onClick={() => onConfirmRepeat(item, true)} />
-                        <Button label="Different" aria-label={`Different: ${item.name}`} size="sm" variant="ghost" onClick={() => onConfirmRepeat(item, false)} />
+                        <Button label="Same item" aria-label={`Same item: ${item.name}`} variant="ghost" onClick={() => onConfirmRepeat(item, true)} />
+                        <Button label="Different" aria-label={`Different: ${item.name}`} variant="ghost" onClick={() => onConfirmRepeat(item, false)} />
                       </HStack>
                     </VStack>
                   )}
@@ -290,7 +291,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           ? (
             // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
             <VStack className="inventory-with-action">
-              <Button label="Add" aria-label="Add a thing" size="sm" className="inventory-action" onClick={() => setAddingItem(true)} />
+              <Button label="Add" aria-label="Add a thing" className="inventory-action" onClick={() => setAddingItem(true)} />
               {section(INVENTORY, `Things (${inSpace.length})`, (
                 <VStack gap={5} className="things-list">
                   {CATEGORIES.map(([id, label]) => {
@@ -309,7 +310,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           : (
             <HStack gap={2} vAlign="center" hAlign="between">
               <Heading level={2}>Things</Heading>
-              <Button label="Add" aria-label="Add a thing" size="sm" onClick={() => setAddingItem(true)} />
+              <Button label="Add" aria-label="Add a thing" onClick={() => setAddingItem(true)} />
             </HStack>
           )}
         {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
@@ -336,7 +337,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       <VStack gap={1}>
         <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={2}>People</Heading>
-          <Button label={usedBy?.length ? 'Edit' : 'Add'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
+          <Button label={usedBy?.length ? 'Edit' : 'Add'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} onClick={onPeople} />
         </HStack>
         {usedBy?.length
           ? (
@@ -357,12 +358,12 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
               <Heading level={2}>Decisions</Heading>
               <Text as="p" color="secondary">{progressLine(decided)}</Text>
             </VStack>
-            <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" size="lg" onClick={onDeclutter} />
+            <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" onClick={onDeclutter} />
             {voteCard}
             {hasSelling && (
               <HStack gap={2} vAlign="center" hAlign="between">
                 <Text as="p">For sale and letting go</Text>
-                <Button label="See list" size="sm" onClick={onSelling} />
+                <Button label="See list" onClick={onSelling} />
               </HStack>
             )}
           </VStack>
@@ -386,7 +387,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           : (
             <VStack gap={2}>
               <Text as="p" color="secondary">Ask about your things, people and decisions.</Text>
-              <Button label="Ask Muse" size="lg" width="100%" onClick={onAsk} />
+              <Button label="Ask Muse" width="100%" onClick={onAsk} />
             </VStack>
           )}
         {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
@@ -394,18 +395,6 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>
-  )
-}
-
-/** Rings pulsing toward a small warm light while Muse looks through the photos, like the welcome tunnel. */
-function ScanPulse() {
-  return (
-    <svg className="scan-pulse" viewBox="0 0 120 120" role="img" aria-label="Finding things">
-      <circle className="scan-pulse-ring" cx="60" cy="60" r="54" />
-      <circle className="scan-pulse-ring" cx="60" cy="60" r="40" />
-      <circle className="scan-pulse-ring" cx="60" cy="60" r="26" />
-      <circle className="scan-pulse-light" cx="60" cy="60" r="10" />
-    </svg>
   )
 }
 

@@ -6,13 +6,13 @@ import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
 import { Layout, LayoutContent } from '@astryxdesign/core/Layout'
-import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { askMuse } from './api.js'
 import { deleteChat, loadChat, saveChat } from './savedSpaces.js'
 import { buildGraph, findCited } from './spaceGraph.js'
+import ScanPulse from './ScanPulse.jsx'
 import { scannedAt } from './spaceItems.js'
 import './AskMuse.css'
 import './Inventory.css'
@@ -96,7 +96,6 @@ function ListingOffer({ action, spaces, onDraft }) {
         <Button
           label={item.listingDraft ? 'Open listing' : selling ? 'Draft a listing' : 'Sell and draft a listing'}
           variant="primary"
-          size="sm"
           onClick={() => onDraft(space.id, item.id)}
         />
       </VStack>
@@ -166,7 +165,7 @@ export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
           <Heading level={1}>Ask Muse</Heading>
           <Text type="supporting">{scope}</Text>
         </VStack>
-        {messages.length > 0 && <Button label="Clear" variant="ghost" size="sm" onClick={clear} />}
+        {messages.length > 0 && <Button label="Clear" variant="ghost" onClick={clear} />}
       </HStack>
 
       <VStack gap={3} padding={4} className="ask-muse-messages" aria-live="polite">
@@ -184,7 +183,12 @@ export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
               {m.action && <ListingOffer action={m.action} spaces={spaces} onDraft={onDraftListing} />}
             </VStack>
           )))}
-        {waiting && <Spinner size="md" label="Thinking…" />}
+        {waiting && (
+          <HStack gap={2} vAlign="center" role="status">
+            <ScanPulse label="Thinking" small />
+            <Text color="secondary">Thinking…</Text>
+          </HStack>
+        )}
         {error && <Text as="p" role="alert">{error} Your question is back in the box, so you can try again.</Text>}
         <span ref={end} />
       </VStack>

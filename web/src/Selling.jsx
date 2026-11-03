@@ -79,7 +79,7 @@ export default function Selling({ spaces, spaceId, tab, onSpace, onTab, familyVo
     item.salePhotos?.length ? null : 'needs photos',
   ]
   const goneButton = ({ space, item }, gone) => (
-    <Button label={gone ? 'Undo' : 'Mark gone'} aria-label={`${gone ? 'Undo' : 'Mark gone'}: ${item.name}`} size="sm" variant="ghost" onClick={() => onGone(space.id, item.id, !gone)} />
+    <Button label={gone ? 'Undo' : 'Mark gone'} aria-label={`${gone ? 'Undo' : 'Mark gone'}: ${item.name}`} variant="ghost" onClick={() => onGone(space.id, item.id, !gone)} />
   )
   const list = (entries, render) => <List hasDividers edge="flush">{entries.map(render)}</List>
 

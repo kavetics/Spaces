@@ -13,7 +13,8 @@ const voteId = location.pathname.match(/^\/vote\/([\w-]+)\/?$/)?.[1]
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Theme theme={spacesTheme}>
+    {/* Always dark, whatever the phone is set to, so every screen matches the dark tunnel art. */}
+    <Theme theme={spacesTheme} mode="dark">
       {voteId ? <VotePage id={voteId} /> : <App />}
     </Theme>
   </StrictMode>,

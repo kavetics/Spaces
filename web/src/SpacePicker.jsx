@@ -35,7 +35,7 @@ export default function SpacePicker({ usedNames = [], onPick, onBack }) {
         </VStack>
         {open.length > 0 && (
           <VStack gap={2}>
-            {open.map(s => <Button key={s} label={s} size="lg" onClick={() => onPick(s)} />)}
+            {open.map(s => <Button key={s} label={s} onClick={() => onPick(s)} />)}
           </VStack>
         )}
         <VStack gap={2}>

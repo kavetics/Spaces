@@ -157,11 +157,11 @@ export default function Camera({ title, hint, onCapture, onBack, onUpload, onTip
           {state !== 'starting' && state !== 'saving' && state !== 'error' && (
             <Text as="p" type="large" weight="semibold" justify="center" className="space-scan-pill" aria-live="polite">{scanning ? live?.guide : hint}</Text>
           )}
-          {state === 'error' && <Button label="Turn on camera" variant="primary" size="lg" onClick={retry} />}
-          {state === 'ready' && <Button label="Start scan" variant="primary" size="lg" onClick={startScan} />}
+          {state === 'error' && <Button label="Turn on camera" variant="primary" onClick={retry} />}
+          {state === 'ready' && <Button label="Start scan" variant="primary" onClick={startScan} />}
           {scanning && live?.taken >= SCAN.minSidesForDone && <Button label="Done turning" onClick={finish} />}
-          {onUpload && (state === 'ready' || state === 'error') && <Button label="Upload a photo instead" variant="ghost" size="sm" onClick={onUpload} />}
-          {onTips && (state === 'ready' || state === 'error') && <Button label="Scanning tips" variant="ghost" size="sm" onClick={onTips} />}
+          {onUpload && (state === 'ready' || state === 'error') && <Button label="Upload a photo instead" variant="ghost" onClick={onUpload} />}
+          {onTips && (state === 'ready' || state === 'error') && <Button label="Scanning tips" variant="ghost" onClick={onTips} />}
         </VStack>
       </section>
     </Theme>

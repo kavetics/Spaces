@@ -13,7 +13,7 @@ export default function SalePhoto({ blob, onRemove }) {
   return (
     <VStack gap={1} hAlign="center">
       {url && <img className="item-sale-photo" src={url} alt="Photo for selling" />}
-      <Button label="Remove" variant="ghost" size="sm" onClick={onRemove} />
+      <Button label="Remove" variant="ghost" onClick={onRemove} />
     </VStack>
   )
 }

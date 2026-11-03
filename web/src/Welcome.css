@@ -37,7 +37,7 @@
   );
 }
 
-/* The light breathes: a soft glow of the same warm white as the main buttons. */
+/* The light breathes: a soft glow of the same gold as the main buttons. */
 .welcome::after {
   content: "";
   position: absolute;
