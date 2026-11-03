@@ -6,7 +6,6 @@ import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { ProgressBar } from '@astryxdesign/core/ProgressBar'
-import { Switch } from '@astryxdesign/core/Switch'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import { DECISIONS, decisionLabel, decisionOf } from './itemFields.js'
@@ -18,47 +17,25 @@ import './Inventory.css'
 const categoryRank = item => CATEGORIES.findIndex(([id]) => id === categoryOf(item))
 const categoryName = item => CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
 
-/** Every item in the chosen Spaces, one Space at a time, grouped by category. */
-function buildStack(spaces) {
-  return spaces.flatMap(space => [...sortItems(space).inSpace]
-    .sort((a, b) => categoryRank(a) - categoryRank(b))
-    .map(item => ({ spaceId: space.id, itemId: item.id })))
-}
+/** Every item in the Space, grouped by category. */
+const buildStack = space => [...sortItems(space).inSpace]
+  .sort((a, b) => categoryRank(a) - categoryRank(b))
+  .map(item => item.id)
 
-/** The Spaces a session covers, in the order it goes through them. Deleted Spaces are left out. */
-function spacesIn(stack, spaces) {
-  const names = [...new Set(stack.map(s => s.spaceId))].map(id => spaces.find(s => s.id === id)?.spaceName).filter(Boolean)
-  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? ''
-}
-
-function Pick({ spaces, saved, onStart, onResume, onCancel }) {
-  const ready = spaces.filter(s => s.result)
-  const [chosen, setChosen] = useState(() => new Set(ready.map(s => s.id)))
-  const picked = ready.filter(s => chosen.has(s.id))
-  const total = picked.reduce((n, s) => n + sortItems(s).inSpace.length, 0)
-  const toggle = (id, on) => setChosen(c => { const next = new Set(c); if (on) next.add(id); else next.delete(id); return next })
+function Resume({ space, saved, onResume, onRestart, onCancel }) {
   return (
     <VStack gap={5} padding={4} className="inventory">
-      <HStack><IconButton label="Your Spaces" icon={<Icon icon="chevronLeft" />} onClick={onCancel} /></HStack>
-      {saved && (
-        <VStack gap={2} className="declutter-resume">
-          <Heading level={2}>Pick up where you left off</Heading>
-          <Text as="p" type="label">{spacesIn(saved.stack, spaces)}</Text>
-          <Text as="p" color="secondary">You stopped at {saved.place + 1} of {saved.stack.length} · {saved.stack.length - saved.place} left.</Text>
-          <ProgressBar label="Items gone through" isLabelHidden value={saved.place} max={saved.stack.length} />
-          <Button label="Resume" variant="primary" size="lg" onClick={onResume} />
-        </VStack>
-      )}
+      <HStack><IconButton label={space.spaceName} icon={<Icon icon="chevronLeft" />} onClick={onCancel} /></HStack>
+      <VStack gap={2} className="declutter-resume">
+        <Heading level={1}>Pick up where you left off</Heading>
+        <Text as="p" color="secondary">{space.spaceName}: you stopped at {saved.place + 1} of {saved.stack.length} · {saved.stack.length - saved.place} left.</Text>
+        <ProgressBar label="Items gone through" isLabelHidden value={saved.place} max={saved.stack.length} />
+        <Button label="Resume" variant="primary" size="lg" onClick={onResume} />
+      </VStack>
       <VStack gap={1}>
-        <Heading level={1}>{saved ? 'Or start over' : 'Declutter'}</Heading>
-        <Text as="p" color="secondary">Go through your things one at a time and decide what to keep, sell or let go. Choose the Spaces to include.</Text>
+        <Button label="Start over" size="lg" onClick={onRestart} />
+        <Text as="p" type="supporting" color="secondary" justify="center">Your decisions so far are kept. Starting over just goes through every item again.</Text>
       </VStack>
-      <VStack gap={3}>
-        {ready.map(s => (
-          <Switch key={s.id} label={s.spaceName} description={countLabel(sortItems(s).inSpace.length)} value={chosen.has(s.id)} onChange={on => toggle(s.id, on)} />
-        ))}
-      </VStack>
-      <Button label={total ? `Start with ${countLabel(total)}` : 'Choose a Space'} variant={saved ? 'secondary' : 'primary'} size="lg" isDisabled={!total} onClick={() => onStart(buildStack(picked))} />
     </VStack>
   )
 }
@@ -114,32 +91,27 @@ function money(item) {
   return null
 }
 
-function Summary({ spaces, stack, onAgain, onDone }) {
-  const items = stack.map(({ spaceId, itemId }) => {
-    const space = spaces.find(s => s.id === spaceId)
-    return { space, item: space?.result?.items.find(i => i.id === itemId) }
-  }).filter(e => e.item)
-  const selling = items.filter(e => decisionOf(e.item.status) === 'sell')
-  const lettingGo = items.filter(e => decisionOf(e.item.status) === 'donate')
-  const row = ({ space, item }, extra) => (
-    <ListItem key={`${space.id}-${item.id}`} label={item.name} description={[space.spaceName, extra].filter(Boolean).join(' · ')} />
-  )
+function Summary({ space, stack, onAgain, onDone }) {
+  const items = stack.map(id => space.result.items.find(i => i.id === id)).filter(Boolean)
+  const selling = items.filter(item => decisionOf(item.status) === 'sell')
+  const lettingGo = items.filter(item => decisionOf(item.status) === 'donate')
+  const row = (item, extra) => <ListItem key={item.id} label={item.name} description={extra || undefined} />
   return (
     <VStack gap={5} padding={4} className="inventory">
       <VStack gap={1}>
-        <Heading level={1}>All done</Heading>
+        <Heading level={1}>{space.spaceName} is done</Heading>
         <Text as="p" color="secondary">You went through {countLabel(items.length)}: {selling.length} to sell, {lettingGo.length} to let go.</Text>
       </VStack>
       <VStack gap={2}>
         <Heading level={2}>To sell ({selling.length})</Heading>
         {selling.length
-          ? <List hasDividers edge="flush">{selling.map(e => row(e, [money(e.item), e.item.salePhotos?.length ? null : 'needs photos'].filter(Boolean).join(' · ')))}</List>
+          ? <List hasDividers edge="flush">{selling.map(item => row(item, [money(item), item.salePhotos?.length ? null : 'needs photos'].filter(Boolean).join(' · ')))}</List>
           : <Text as="p" color="secondary">Nothing to sell.</Text>}
       </VStack>
       <VStack gap={2}>
         <Heading level={2}>To let go ({lettingGo.length})</Heading>
         {lettingGo.length
-          ? <List hasDividers edge="flush">{lettingGo.map(e => row(e))}</List>
+          ? <List hasDividers edge="flush">{lettingGo.map(item => row(item))}</List>
           : <Text as="p" color="secondary">Nothing to let go.</Text>}
       </VStack>
       <Button label="Done" variant="primary" size="lg" onClick={onDone} />
@@ -149,56 +121,75 @@ function Summary({ spaces, stack, onAgain, onDone }) {
 }
 
 /**
- * Decluttering one item at a time: pick Spaces, decide on each item with one tap, then see what to
+ * Decluttering one Space, one item at a time: decide on each item with one tap, then see what to
  * sell and what to let go. Every decision is saved as it's made, so stopping partway loses nothing.
+ * Each Space keeps its own place.
  */
-const SESSION = 'declutter'
+const sessionKey = spaceId => `declutter:${spaceId}`
 const unfinished = s => (s?.stack?.length && s.place < s.stack.length ? s : null)
 
-/** How many items are left in a saved Declutter session, or null when there isn't one. */
-export const declutterLeft = () => loadChat(SESSION).then(s => (unfinished(s) ? s.stack.length - s.place : null))
+/** How many items are left in a Space's saved Declutter session, or null when there isn't one. */
+export const declutterLeft = spaceId => loadChat(sessionKey(spaceId)).then(s => (unfinished(s) ? s.stack.length - s.place : null))
 
-export default function Declutter({ spaces, onUpdateItem, onExit }) {
+/** Forget a Space's place, when the Space is deleted or rescanned (its item ids start over). */
+export const forgetDeclutter = spaceId => deleteChat(sessionKey(spaceId))
+
+export default function Declutter({ space, onUpdateItem, onExit }) {
   const [stack, setStack] = useState(null)
   const [place, setPlace] = useState(0)
   const [history, setHistory] = useState([]) // what each decision replaced, so Undo can put it back
   const [saved, setSaved] = useState(undefined) // an unfinished session from before, or null; undefined while loading
+  const key = sessionKey(space.id)
 
-  useEffect(() => { loadChat(SESSION).then(s => setSaved(unfinished(s))) }, [])
+  function start() {
+    setStack(buildStack(space))
+    setPlace(0)
+    setHistory([])
+    setSaved(null)
+  }
+
+  useEffect(() => {
+    deleteChat('declutter') // the old session across all Spaces, from before Declutter went per Space
+    loadChat(key).then(s => {
+      if (unfinished(s)) setSaved(s)
+      else start()
+    })
+    // Runs once, when Declutter opens.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // The session is saved as it goes, so stopping, a reload or a sleeping phone can't lose the place.
   useEffect(() => {
     if (!stack) return
-    if (place >= stack.length) deleteChat(SESSION)
-    else saveChat(SESSION, { stack, place, history, savedAt: Date.now() })
-  }, [stack, place, history])
+    if (place >= stack.length) deleteChat(key)
+    else saveChat(key, { stack, place, history, savedAt: Date.now() })
+  }, [key, stack, place, history])
 
   if (saved === undefined) return null
   if (!stack) {
     return (
-      <Pick
-        spaces={spaces}
+      <Resume
+        space={space}
         saved={saved}
         onCancel={onExit}
         onResume={() => { setStack(saved.stack); setPlace(saved.place); setHistory(saved.history ?? []); setSaved(null) }}
-        onStart={s => { setStack(s); setPlace(0); setHistory([]); setSaved(null) }}
+        onRestart={start}
       />
     )
   }
-  if (place >= stack.length) return <Summary spaces={spaces} stack={stack} onDone={onExit} onAgain={() => setStack(null)} />
+  if (place >= stack.length) return <Summary space={space} stack={stack} onDone={onExit} onAgain={start} />
 
-  const { spaceId, itemId } = stack[place]
-  const space = spaces.find(s => s.id === spaceId)
-  const item = space?.result?.items.find(i => i.id === itemId)
-  // The item was removed or its Space rescanned since starting, so move past it.
+  const itemId = stack[place]
+  const item = space.result?.items.find(i => i.id === itemId)
+  // The item was removed since starting, so move past it.
   if (!item) {
     setTimeout(() => setPlace(p => p + 1))
     return null
   }
 
   function decide(status) {
-    setHistory(h => [...h, { place, spaceId, itemId, status: item.status }])
-    onUpdateItem(spaceId, itemId, { status })
+    setHistory(h => [...h, { place, itemId, status: item.status }])
+    onUpdateItem(itemId, { status })
     if (status !== 'sell') setPlace(p => p + 1)
   }
 
@@ -206,13 +197,13 @@ export default function Declutter({ spaces, onUpdateItem, onExit }) {
     const last = history[history.length - 1]
     if (!last) return
     setHistory(h => h.slice(0, -1))
-    onUpdateItem(last.spaceId, last.itemId, { status: last.status })
+    onUpdateItem(last.itemId, { status: last.status })
     setPlace(last.place)
   }
 
   return (
     <Card
-      key={`${spaceId}-${itemId}`}
+      key={itemId}
       space={space}
       item={item}
       place={place + 1}
@@ -222,7 +213,7 @@ export default function Declutter({ spaces, onUpdateItem, onExit }) {
       onSellDone={() => setPlace(p => p + 1)}
       onSkip={() => setPlace(p => p + 1)}
       onUndo={undo}
-      onChange={patch => onUpdateItem(spaceId, itemId, patch)}
+      onChange={patch => onUpdateItem(itemId, patch)}
       onStop={onExit}
     />
   )

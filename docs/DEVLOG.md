@@ -344,3 +344,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** no WhatsApp Cloud API or Marketplace API: Marketplace has no public listing API, and the Cloud API needs business approval and templates. Votes come back as WhatsApp replies for now; a vote link needs items on a server, so it stays on the roadmap. Spaces is upstream of Marketplace: it finds what to sell and hands it off, rather than competing with Meta's own listing tools.
 - **Learned:** iPhones only open the share sheet straight after a tap, so the photo is prepared when the page opens.
 - **Next:** iPhone check of sharing, README, accuracy numbers, Meta feedback report, video.
+
+## 2026-11-02: Declutter one Space at a time
+- **Done:** Declutter starts from a Space's page ("Declutter this Space") and goes straight to its first item. Each Space keeps its own place to resume, and Your Spaces shows "N left to decide" or "All decided" per Space. The Spaces picker is gone.
+- **Decisions:** one room at a time is easier to follow and to finish than one session across Spaces. The family vote link will follow it: one Space per link. A rescan or delete forgets that Space's place, since item ids start over.
+- **Next:** People (household list), then the family vote link.

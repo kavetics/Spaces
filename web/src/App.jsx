@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { buildInventory, findRepeats, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
-import Declutter, { declutterLeft } from './Declutter.jsx'
+import Declutter, { declutterLeft, forgetDeclutter } from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
 import MoreParts from './MoreParts.jsx'
 import ScanGuide from './ScanGuide.jsx'
@@ -32,7 +32,7 @@ export default function App() {
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
   const [itemFrom, setItemFrom] = useState(null) // an item opened from Ask Muse goes back there, with its listing drafting
-  const [leftToDeclutter, setLeftToDeclutter] = useState(null)
+  const [leftToDeclutter, setLeftToDeclutter] = useState({}) // Space id → items left in its saved Declutter session
   const [showGuide, setShowGuide] = useState(false)
   const [parts, setParts] = useState(1) // parts of the open Space scanned in this go, for the "Is there more?" screen
   const [pending, setPending] = useState(null) // the Space about to be scanned: { name, id if rescanning }
@@ -132,8 +132,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (screen === 'spaces') declutterLeft().then(setLeftToDeclutter)
-  }, [screen])
+    if (screen === 'space' && openId != null) declutterLeft(openId).then(left => setLeftToDeclutter(l => ({ ...l, [openId]: left })))
+  }, [screen, openId])
 
   // Each item's picture is made once, after recognition, and saved. Older Spaces get theirs here too.
   useEffect(() => {
@@ -206,7 +206,11 @@ export default function App() {
       savedAt: Date.now(),
     }
     saveSpace(fresh)
-    if (previous) deleteChat(previous.id) // it was about the items this scan replaces
+    if (previous) {
+      // Both were about the items this scan replaces.
+      deleteChat(previous.id)
+      forgetDeclutter(previous.id)
+    }
     setSpaces(current => (previous ? current.map(s => (s.id === fresh.id ? fresh : s)) : [...current, fresh]))
     setFailed(({ [fresh.id]: _, ...rest }) => rest)
     setOpenId(fresh.id)
@@ -275,6 +279,7 @@ export default function App() {
     if (open.shared) await unshareSpace(open.id, getOwnerKey())
     await deleteSpace(open.id)
     deleteChat(open.id)
+    forgetDeclutter(open.id)
     const left = spaces.filter(s => s.id !== open.id)
     setSpaces(left)
     setOpenId(null)
@@ -301,8 +306,6 @@ export default function App() {
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
           onAsk={() => setScreen('ask-all')}
-          onDeclutter={() => setScreen('declutter')}
-          declutterLeft={leftToDeclutter}
         />
       )}
 
@@ -363,6 +366,8 @@ export default function App() {
           onAddItem={fields => addItem(open.id, fields)}
           onBack={() => setScreen('spaces')}
           onAsk={() => setScreen('ask-space')}
+          onDeclutter={() => setScreen('declutter')}
+          declutterLeft={leftToDeclutter[open.id]}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
@@ -391,7 +396,9 @@ export default function App() {
         />
       )}
 
-      {screen === 'declutter' && <Declutter spaces={spaces} onUpdateItem={updateItem} onExit={() => setScreen('spaces')} />}
+      {screen === 'declutter' && open && (
+        <Declutter key={open.id} space={open} onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)} onExit={() => setScreen('space')} />
+      )}
 
       {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}
       {screen === 'ask-space' && open && <AskMuse key={open.id} spaces={spaces} space={open} onBack={() => setScreen('space')} onDraftListing={draftFromChat} />}
