@@ -393,3 +393,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** photos travel inside the connector's answer, because Muse's Marketplace tool takes files and can turn image data into one, but can't take a link. Only Sell items carry photos, and room photos never leave the phone; the Share with Muse note says so. The server keeps photos only on Sell items, at most 3, JPEG, under a size cap. Location stays with the owner, told to Muse directly.
 - **Learned:** tested against the real shared table with test-only keys (`.env.test`, git-ignored, and a `share-test` launch config); the test Space is removed afterwards.
 - **Next:** owner tests Muse creating a listing; mockups of every screen for the redesign.
+
+## 2026-11-03: Redesign around Things, People, Decisions and Muse
+- **Done:** five screens follow the product model. Welcome says what Spaces does and shows the four parts. Home ("Your home") has Spaces, People, Decisions and Muse sections, with Ask Muse as the one main button. The Space page has the same four sections, Declutter as its one main button, and a "..." menu where Scan again offers "Add to this Space" or "Start over", plus Delete Space. The item page reads Thing, then Decision with the family vote, then selling, and ends with Done instead of a Save that needed explaining. "Items" became "things" on screen.
+- **Decisions:** mockups of every screen were approved before building. Back from People and Ask Muse returns to where they were opened. The design rules live in the spaces-design skill, with a script that screenshots the main screens.
+- **Next:** light-touch "tunnel of light" theme in warm white for the demo; README; video.

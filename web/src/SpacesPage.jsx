@@ -1,23 +1,24 @@
 import { Button } from '@astryxdesign/core/Button'
+import { Divider } from '@astryxdesign/core/Divider'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import { progress } from './itemFields.js'
-import { sellingButton } from './Selling.jsx'
+import { sellingButton, sellingLists } from './Selling.jsx'
 import { countLabel, scannedDay, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
 function status(space, failed) {
   if (failed) return "Couldn't finish. Tap to try again."
-  if (!space.result) return 'Finding items…'
+  if (!space.result) return 'Finding things…'
   if (space.addFrames) return 'Adding photos…'
   const { inSpace } = sortItems(space)
   const { decided, total } = progress(inSpace)
   // Decluttering progress shows once it has started.
   const decluttering = !decided ? null : decided === total ? 'All decided' : `${total - decided} left to decide`
-  return [countLabel(inSpace.length), decluttering, `Scanned ${scannedDay(space.savedAt)}`].filter(Boolean).join(' · ')
+  return [countLabel(inSpace.length, 'thing'), decluttering, `Scanned ${scannedDay(space.savedAt)}`].filter(Boolean).join(' · ')
 }
 
 function SpaceRow({ space, failed, onOpen }) {
@@ -31,21 +32,66 @@ function SpaceRow({ space, failed, onOpen }) {
   )
 }
 
-/** Every Space on this phone, and the way to scan another. */
+const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
+const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
+
+/** The home: its Spaces, the People who share them, the Decisions made so far, and Muse, which uses all three. */
 export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, onSelling, people, onPeople }) {
+  const ready = spaces.filter(s => s.result)
+  const { toSell, toLetGo, sold, gone } = sellingLists(spaces)
+  const decided = ready.reduce((n, s) => n + progress(sortItems(s).inSpace).decided, 0)
+  const shared = ready.filter(s => s.shared).map(s => s.spaceName)
   return (
-    <VStack gap={4} padding={4} className="inventory">
+    <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
-        <Heading level={1}>Your Spaces</Heading>
-        <Button label="Scan another Space" size="sm" isDisabled={processing} onClick={onScanAnother} />
+        <Heading level={1}>Your home</Heading>
+        <Button label="Scan a Space" size="sm" isDisabled={processing} onClick={onScanAnother} />
       </HStack>
-      <List hasDividers edge="flush">
-        {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
-      </List>
-      {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
-      {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}
-      {sellingButton(spaces) && <Button label={sellingButton(spaces)} size="lg" onClick={onSelling} />}
-      <Button label={people.length ? `People · ${people.length}` : 'People'} size="lg" onClick={onPeople} />
+
+      <VStack gap={1}>
+        <Heading level={2}>Spaces</Heading>
+        <List hasDividers edge="flush">
+          {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
+        </List>
+        {processing && <Text as="p" color="secondary">You can scan another Space when this one finishes.</Text>}
+      </VStack>
+
+      <Divider />
+      <HStack gap={2} vAlign="center" hAlign="between">
+        <VStack gap={0}>
+          <Heading level={2}>People</Heading>
+          <Text as="p" color="secondary">{people.length ? andList(people.map(p => p.name)) : 'Add who shares your home.'}</Text>
+        </VStack>
+        <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
+      </HStack>
+
+      <Divider />
+      <HStack gap={2} vAlign="center" hAlign="between">
+        <VStack gap={0}>
+          <Heading level={2}>Decisions</Heading>
+          <Text as="p" color="secondary">
+            {toSell.length || toLetGo.length || sold.length || gone.length
+              ? [toSell.length && `${toSell.length} for sale`, toLetGo.length && `${toLetGo.length} to let go`, sold.length && `${sold.length} sold`, gone.length && `${gone.length} gone`].filter(Boolean).join(' · ')
+              : decided ? `${decided} decided, all kept` : 'Open a Space to declutter it.'}
+          </Text>
+        </VStack>
+        {sellingButton(spaces) && <Button label="See list" aria-label="For sale and letting go" size="sm" onClick={onSelling} />}
+      </HStack>
+
+      {ready.length > 0 && (
+        <>
+          <Divider />
+          <VStack gap={2}>
+            <Heading level={2}>Muse</Heading>
+            <Text as="p" color="secondary">
+              {SHOW_SHARING
+                ? (shared.length ? `Muse in the Meta AI app can see: ${andList(shared)}.` : 'Turn on Muse in a Space to let the Meta AI app use it.')
+                : 'Ask about your things, people and decisions, across every Space.'}
+            </Text>
+            <Button label="Ask Muse" variant="primary" size="lg" onClick={onAsk} />
+          </VStack>
+        </>
+      )}
     </VStack>
   )
 }

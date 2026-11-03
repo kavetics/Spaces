@@ -4,6 +4,7 @@ import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Collapsible } from '@astryxdesign/core/Collapsible'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
+import { Divider } from '@astryxdesign/core/Divider'
 import { Layout, LayoutContent } from '@astryxdesign/core/Layout'
 import { Switch } from '@astryxdesign/core/Switch'
 import { TextInput } from '@astryxdesign/core/TextInput'
@@ -19,7 +20,7 @@ import { VStack } from '@astryxdesign/core/VStack'
 import { shrinkPhoto } from './api.js'
 import { byYou, decisionLabel, decisionOf, progress as itemProgress } from './itemFields.js'
 import ItemForm from './ItemForm.jsx'
-import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
+import { CATEGORIES, categoryOf, countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
 // Sharing with the Muse app works for one household, the owner's, so it's hidden unless a build turns it on.
@@ -30,13 +31,13 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling, onPeople, onAsk }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
   const [askDelete, setAskDelete] = useState(false)
   const [askRescan, setAskRescan] = useState(false)
-  const [askAdd, setAskAdd] = useState(false)
+  const [showMore, setShowMore] = useState(false) // Scan again and Delete Space
   const addInput = useRef(null)
   const [askKey, setAskKey] = useState(false)
   const [typedKey, setTypedKey] = useState('')
@@ -56,15 +57,15 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   }, [focusItem])
 
 
-  const backButton = <IconButton label="Your Spaces" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
+  const backButton = <IconButton label="Your home" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
   const dialogs = (
     <>
       <AlertDialog
         isOpen={askRescan}
         onOpenChange={setAskRescan}
-        title={`Rescan ${spaceName}?`}
-        description="Your new scan replaces these photos and the scanned items, including your edits and removals. Items you added by hand stay."
-        actionLabel="Rescan"
+        title={`Start ${spaceName} over?`}
+        description="Your new scan replaces these photos and the scanned things, including your edits and removals. Things you added by hand stay."
+        actionLabel="Start over"
         actionVariant="primary"
         onAction={() => { setAskRescan(false); onRescan() }}
       />
@@ -81,15 +82,26 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           }
         }}
       />
-      <Dialog isOpen={askAdd} onOpenChange={setAskAdd} width={420}>
+      {/* "Add more" and "Rescan" were two flows for one intention, scanning again; adding is what's wanted almost always. */}
+      <Dialog isOpen={showMore} onOpenChange={setShowMore} width={420}>
         <Layout
-          header={<DialogHeader title={`Add to ${spaceName}`} onOpenChange={setAskAdd} />}
+          header={<DialogHeader title={`Scan the ${spaceName.toLowerCase()} again`} onOpenChange={setShowMore} />}
           content={
             <LayoutContent>
-              <VStack gap={3}>
-                <Text as="p">For corners or parts of the Space you couldn't see from one spot. New items are added to this inventory, and your decisions stay as they are.</Text>
-                <Button label="Scan from another spot" variant="primary" onClick={() => { setAskAdd(false); onScanMore() }} />
-                <Button label="Add photos" onClick={() => addInput.current?.click()} />
+              <VStack gap={4}>
+                <VStack gap={2}>
+                  <Heading level={3}>Add to this Space</Heading>
+                  <Text as="p" color="secondary">Keeps your things, decisions and edits. New things are checked for repeats.</Text>
+                  <Button label="Scan from another spot" variant="primary" isDisabled={Boolean(space.addFrames)} onClick={() => { setShowMore(false); onScanMore() }} />
+                  <Button label="Add photos" isDisabled={Boolean(space.addFrames)} onClick={() => addInput.current?.click()} />
+                </VStack>
+                <VStack gap={2}>
+                  <Heading level={3}>Start over</Heading>
+                  <Text as="p" color="secondary">Replaces the scanned things. Things you added by hand stay.</Text>
+                  <Button label="Start over" isDisabled={Boolean(space.addFrames)} onClick={() => { setShowMore(false); setAskRescan(true) }} />
+                </VStack>
+                <Divider />
+                <Button label="Delete Space" variant="destructive" onClick={() => { setShowMore(false); setAskDelete(true) }} />
               </VStack>
             </LayoutContent>
           }
@@ -136,7 +148,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           <Heading level={1}>{spaceName}</Heading>
           <Text as="p" justify="center">{error}</Text>
           <Button label="Try again" variant="primary" onClick={onRetry} />
-          <Button label="Rescan" onClick={() => setAskRescan(true)} />
+          <Button label="Start over" onClick={() => setAskRescan(true)} />
           <Button label="Delete Space" variant="ghost" onClick={() => setAskDelete(true)} />
         </VStack>
         {dialogs}
@@ -166,7 +178,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   async function addFromLibrary(event) {
     const files = [...(event.target.files ?? [])]
     event.target.value = ''
-    setAskAdd(false)
+    setShowMore(false)
     onAddPhotos((await Promise.all(files.map(f => shrinkPhoto(f).catch(() => null)))).filter(Boolean))
   }
   const areas = [...new Set(nearby.map(i => i.area))]
@@ -207,32 +219,19 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       {children}
     </Collapsible>
   )
+  const decided = itemProgress(inSpace)
+  const hasSelling = inSpace.some(i => ['sell', 'donate'].includes(decisionOf(i.status)))
   return (
-    <VStack gap={4} padding={4} className="inventory">
+    <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
         {backButton}
-        <Button label="Delete Space" variant="ghost" size="sm" onClick={() => setAskDelete(true)} />
+        <IconButton label="More" icon={<Icon icon="moreHorizontal" />} onClick={() => setShowMore(true)} />
       </HStack>
       <VStack gap={1}>
-        <HStack gap={2} vAlign="center" hAlign="between">
-          <Heading level={1}>{spaceName}</Heading>
-          <HStack gap={1}>
-            <Button label="Add more" size="sm" isDisabled={adding} onClick={() => setAskAdd(true)} />
-            <Button label="Rescan" size="sm" isDisabled={adding} onClick={() => setAskRescan(true)} />
-          </HStack>
-        </HStack>
-        <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
-        {usedBy?.length > 0 && <Text color="secondary">Used by {andList(usedBy)}</Text>}
-        {SHOW_SHARING && <Switch
-          label="Share with Muse"
-          description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Items marked Sell also send up to 3 small sale photos and their listing draft, so Muse can list them on Marketplace. Room photos stay on this phone."
-          value={Boolean(space.shared)}
-          isDisabled={sharing}
-          onChange={on => toggleShare(on)}
-        />}
-        {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
+        <Heading level={1}>{spaceName}</Heading>
+        <Text color="secondary">Scanned {scannedAt(savedAt)} · {countLabel(inSpace.length, 'thing')}</Text>
       </VStack>
-      {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some items may be missing.`} />}
+      {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some things may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
       <input ref={addInput} type="file" accept="image/*" multiple hidden onChange={addFromLibrary} />
       {adding && !error && (
@@ -283,55 +282,107 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           </List>
         </VStack>
       )}
-      {inSpace.length > 0 && (
-        <HStack gap={2} vAlign="center" hAlign="between">
-          <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>
-          {inSpace.some(i => ['sell', 'donate'].includes(decisionOf(i.status))) && <Button label="See list" variant="ghost" size="sm" onClick={onSelling} />}
-        </HStack>
-      )}
-      {inSpace.length > 0 && (
-        // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
-        <VStack className="inventory-with-action">
-          <Button label="Add an item" size="sm" className="inventory-action" onClick={() => setAddingItem(true)} />
-          {section(INVENTORY, `Digital inventory (${inSpace.length})`, (
-        <VStack gap={3}>
-          {CATEGORIES.map(([id, label]) => {
-            const inCategory = inSpace.filter(i => categoryOf(i) === id)
-            if (!inCategory.length) return null
-            const sure = inCategory.filter(i => !i.needsReview)
-            const unsure = inCategory.filter(i => i.needsReview)
-            return section(id, `${label} (${inCategory.length})`, (
-              <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
-            ), 3)
-          })}
-        </VStack>
-          ), 2, 'inventory-action-trigger')}
-        </VStack>
-      )}
 
-      {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
-        <VStack gap={3}>
-          {areas.map(area => (
-            <VStack key={area} gap={2}>
-              <Heading level={3}>{area}</Heading>
-              <List hasDividers edge="flush">
-                {nearby.filter(i => i.area === area).map(i => row(i, null, (
-                  <HStack gap={1}>
-                    {action(i, 'Add', () => onItemChoice(i.id, 'add'))}
-                    {action(i, 'Remove', () => remove(i))}
-                  </HStack>
-                )))}
-              </List>
+      {/* Things */}
+      <VStack gap={2}>
+        {inSpace.length > 0
+          ? (
+            // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
+            <VStack className="inventory-with-action">
+              <Button label="Add" aria-label="Add a thing" size="sm" className="inventory-action" onClick={() => setAddingItem(true)} />
+              {section(INVENTORY, `Things (${inSpace.length})`, (
+                <VStack gap={3}>
+                  {CATEGORIES.map(([id, label]) => {
+                    const inCategory = inSpace.filter(i => categoryOf(i) === id)
+                    if (!inCategory.length) return null
+                    const sure = inCategory.filter(i => !i.needsReview)
+                    const unsure = inCategory.filter(i => i.needsReview)
+                    return section(id, `${label} (${inCategory.length})`, (
+                      <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
+                    ), 3)
+                  })}
+                </VStack>
+              ), 2, 'inventory-action-trigger')}
             </VStack>
-          ))}
-        </VStack>
-      ))}
+          )
+          : (
+            <HStack gap={2} vAlign="center" hAlign="between">
+              <Heading level={2}>Things</Heading>
+              <Button label="Add" aria-label="Add a thing" size="sm" onClick={() => setAddingItem(true)} />
+            </HStack>
+          )}
+        {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
+          <VStack gap={3}>
+            {areas.map(area => (
+              <VStack key={area} gap={2}>
+                <Heading level={3}>{area}</Heading>
+                <List hasDividers edge="flush">
+                  {nearby.filter(i => i.area === area).map(i => row(i, null, (
+                    <HStack gap={1}>
+                      {action(i, 'Add', () => onItemChoice(i.id, 'add'))}
+                      {action(i, 'Remove', () => remove(i))}
+                    </HStack>
+                  )))}
+                </List>
+              </VStack>
+            ))}
+          </VStack>
+        ), 3)}
+      </VStack>
 
-      {inSpace.length === 0 && <Button label="Add an item" onClick={() => setAddingItem(true)} />}
-      {inSpace.length > 0 && voteCard}
+      <Divider />
+      {/* People */}
+      <VStack gap={1}>
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Heading level={2}>People</Heading>
+          <Button label={usedBy?.length ? 'Edit' : 'Add'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
+        </HStack>
+        <Text as="p" color="secondary">{usedBy?.length ? `${andList(usedBy)} ${usedBy.length > 1 ? 'use' : 'uses'} this Space` : 'Add who shares this Space.'}</Text>
+      </VStack>
+
       {inSpace.length > 0 && (
-        <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" size="lg" onClick={onDeclutter} />
+        <>
+          <Divider />
+          {/* Decisions */}
+          <VStack gap={3}>
+            <VStack gap={1}>
+              <Heading level={2}>Decisions</Heading>
+              <Text as="p" color="secondary">{progressLine(decided)}</Text>
+            </VStack>
+            <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" size="lg" onClick={onDeclutter} />
+            {voteCard}
+            {hasSelling && (
+              <HStack gap={2} vAlign="center" hAlign="between">
+                <Text as="p">For sale and letting go</Text>
+                <Button label="See list" size="sm" onClick={onSelling} />
+              </HStack>
+            )}
+          </VStack>
+        </>
       )}
+
+      <Divider />
+      {/* Muse */}
+      <VStack gap={2}>
+        <Heading level={2}>Muse</Heading>
+        {SHOW_SHARING
+          ? (
+            <Switch
+              label="Muse can use this Space"
+              description="Sends its things' names and details to your Spaces server, for Muse in the Meta AI app. Things marked Sell also send up to 3 small sale photos and their listing draft, so Muse can list them on Marketplace. Room photos stay on this phone."
+              value={Boolean(space.shared)}
+              isDisabled={sharing}
+              onChange={on => toggleShare(on)}
+            />
+          )
+          : (
+            <HStack gap={2} vAlign="center" hAlign="between">
+              <Text as="p" color="secondary">Ask about your things, people and decisions.</Text>
+              <Button label="Ask Muse" size="sm" onClick={onAsk} />
+            </HStack>
+          )}
+        {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
+      </VStack>
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>

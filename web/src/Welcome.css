@@ -14,6 +14,9 @@
 .welcome-scan-sweep line { stroke: var(--color-accent); stroke-width: 1; stroke-linecap: round; }
 .welcome-scan-sweep circle { fill: var(--color-accent); }
 
+.welcome-parts { width: min(80vw, 20rem); margin-block-start: var(--spacing-4); }
+.welcome-part { padding: var(--spacing-3); border-radius: var(--radius-container); border: var(--border-width) solid var(--color-border-emphasized); }
+
 .welcome-title { animation: welcome-fade var(--duration-slow) var(--ease-standard) both; }
 .welcome-button { animation: welcome-pop var(--duration-medium) var(--ease-standard) both; }
 

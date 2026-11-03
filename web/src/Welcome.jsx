@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
+import { Grid } from '@astryxdesign/core/Grid'
 import { Heading } from '@astryxdesign/core/Heading'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { Text } from '@astryxdesign/core/Text'
@@ -49,11 +50,15 @@ export default function Welcome({ loadScanner, onAccept }) {
         <VStack gap={8} hAlign="center">
           <VStack gap={2} hAlign="center" className="welcome-title" onAnimationEnd={() => setShowButton(true)}>
             <Heading level={1} type="display-1" justify="center">SPACES</Heading>
-            <Text as="p" type="large" color="secondary" justify="center">Your places, on your fingertips.</Text>
+            <Text as="p" type="large" color="secondary" justify="center">Scan a room. Spaces learns what's in your home, who shares it and what you've decided, and Muse can use it.</Text>
+            {/* The four parts of the model, so it's clear from the first screen what Spaces builds. */}
+            <Grid columns={2} gap={2} className="welcome-parts">
+              {['Things', 'People', 'Decisions', 'Muse'].map(part => <Text key={part} as="p" weight="medium" justify="center" className="welcome-part">{part}</Text>)}
+            </Grid>
           </VStack>
           {showButton && (
             <Center className="welcome-button">
-              <Button label="Jump in" variant="primary" size="lg" onClick={() => setAskConsent(true)} />
+              <Button label="Scan your first Space" variant="primary" size="lg" onClick={() => setAskConsent(true)} />
             </Center>
           )}
         </VStack>

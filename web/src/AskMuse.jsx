@@ -74,7 +74,7 @@ function Answer({ parts, spaces, onCite }) {
       {parts.map((part, i) => {
         if (part.text) return <span key={i}>{part.text}</span>
         const cited = findCited(spaces, part.cite)
-        if (!cited) return <span key={i} title="No longer in this inventory">{part.cite.name}</span>
+        if (!cited) return <span key={i} title="No longer in this Space">{part.cite.name}</span>
         return <button key={i} type="button" className="citation" onClick={() => onCite(cited)}>{cited.item.name}</button>
       })}
     </Text>

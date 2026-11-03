@@ -6,7 +6,6 @@ import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl'
 import { Text } from '@astryxdesign/core/Text'
-import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { DECISIONS, byYou, decisionOf } from './itemFields.js'
 import ItemForm from './ItemForm.jsx'
@@ -14,9 +13,8 @@ import SellForm from './SellForm.jsx'
 import { categoryOf, CATEGORIES } from './spaceItems.js'
 import './Inventory.css'
 
-/** One item: its decision, and when it's for sale, the photos and details a listing needs. */
+/** One thing: what it is, its decision (with the family's votes), and when it's for sale, what a listing needs. */
 export default function ItemDetail({ space, item, onChange, onBack, onSave, backLabel, autoDraft, familyVotes, inOpenVote, onAskFamily }) {
-  const toast = useToast()
   const [editing, setEditing] = useState(false)
   const category = CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
 
@@ -49,7 +47,7 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
       )}
 
       <VStack gap={2}>
-        <Heading level={2}>What should happen to it?</Heading>
+        <Heading level={2}>Decision</Heading>
         <SegmentedControl label="Decision" value={decisionOf(item.status) ?? ''} onChange={status => onChange({ status })}>
           {DECISIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
         </SegmentedControl>
@@ -68,10 +66,8 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
 
       {item.status === 'sell' && <SellForm item={item} onChange={onChange} autoDraft={autoDraft} />}
 
-      <VStack gap={2}>
-        <Button label="Save" variant="primary" size="lg" onClick={() => { toast({ body: `Saved ${item.name}`, autoHideDuration: 3000 }); onSave() }} />
-        <Text as="p" color="secondary" justify="center">Changes are kept as you go. Save takes you back to your inventory.</Text>
-      </VStack>
+      {/* Changes are kept as they're made, so this only finishes; no "Save" that needs explaining. */}
+      <Button label="Done" variant="primary" size="lg" onClick={onSave} />
     </VStack>
   )
 }

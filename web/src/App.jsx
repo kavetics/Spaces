@@ -36,6 +36,7 @@ export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
   const [people, setPeople] = useState([]) // the household, added by hand or from contacts
+  const [backTo, setBackTo] = useState('spaces') // where People and Ask Muse go back to
   const [voteSetup, setVoteSetup] = useState(null) // making a vote link: { preselect: item ids or null for all, from: screen }
   const [voteResults, setVoteResults] = useState({}) // Space id → its family votes, as the server last sent them
   const [openId, setOpenId] = useState(null)
@@ -386,10 +387,10 @@ export default function App() {
           processing={processing}
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
-          onAsk={() => setScreen('ask-all')}
+          onAsk={() => { setBackTo('spaces'); setScreen('ask-all') }}
           onSelling={() => openSelling('all', 'spaces')}
           people={people}
-          onPeople={() => setScreen('people')}
+          onPeople={() => { setBackTo('spaces'); setScreen('people') }}
         />
       )}
 
@@ -398,7 +399,7 @@ export default function App() {
           people={people}
           spaces={spaces.filter(s => s.result)}
           onChange={next => { setPeople(next); savePeople(next) }}
-          onBack={() => setScreen('spaces')}
+          onBack={() => setScreen(backTo)}
         />
       )}
 
@@ -460,6 +461,8 @@ export default function App() {
           onBack={() => setScreen('spaces')}
           onDeclutter={() => setScreen('declutter')}
           onSelling={() => openSelling(open.id, 'space')}
+          onPeople={() => { setBackTo('space'); setScreen('people') }}
+          onAsk={() => { setBackTo('space'); setScreen('ask-all') }}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
           voteCard={<VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} />}
@@ -545,11 +548,11 @@ export default function App() {
             setVoteResults(v => ({ ...v, [open.id]: { votes: [] } }))
           }}
           onBack={() => setScreen(voteSetup?.from ?? 'space')}
-          onPeople={() => setScreen('people')}
+          onPeople={() => { setBackTo('vote-setup'); setScreen('people') }}
         />
       )}
 
-      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}
+      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen(backTo)} onDraftListing={draftFromChat} />}
     </>
   )
 }

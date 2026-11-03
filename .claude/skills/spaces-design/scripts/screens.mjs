@@ -1,4 +1,4 @@
-// Screenshots of the main Spaces screens at iPhone size (390 x 844), for design reviews.
+// Screenshots of the main Spaces screens (and the Scan again sheet) at iPhone size (390 x 844), for design reviews.
 // The scan is faked (no AI calls, no cost); everything else is the real app and its storage.
 //
 //   node screens.mjs <app url> <output folder> <any photo>
@@ -43,19 +43,20 @@ const openRow = text => p.evaluate(t => { const row = [...document.querySelector
 const shot = async name => { await wait(500); await p.screenshot({ path: `${OUT}/${name}.png`, fullPage: true }); console.log('saved', name) }
 
 try {
-  await p.goto(BASE, { waitUntil: 'networkidle0' }); await until('Jump in'); await shot('01-welcome')
-  await click('Jump in'); await until('I agree'); await click('I agree'); await until('What are you scanning?'); await shot('02-pick-a-space')
+  await p.goto(BASE, { waitUntil: 'networkidle0' }); await until('Scan your first Space'); await shot('01-welcome')
+  await click('Scan your first Space'); await until('I agree'); await click('I agree'); await until('What are you scanning?'); await shot('02-pick-a-space')
   await click('Living room'); await p.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Got it'), { timeout: 20000 }); await shot('03-scan-guide')
-  await click('Got it'); await wait(400); await (await p.$('input[type=file]')).uploadFile(PHOTO); await until('Digital inventory'); await wait(1500)
-  await p.evaluate(() => [...document.querySelectorAll('h2')].find(h => h.innerText.startsWith('Digital inventory'))?.closest('button')?.click()); await shot('04-space')
-  await openRow('brown leather sofa'); await until('What should happen to it?'); await shot('05-item')
+  await click('Got it'); await wait(400); await (await p.$('input[type=file]')).uploadFile(PHOTO); await until('Things ('); await wait(1500)
+  await p.evaluate(() => [...document.querySelectorAll('h2')].find(h => h.innerText.startsWith('Things ('))?.closest('button')?.click()); await shot('04-space')
+  await tapLabel('More'); await p.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Start over'), { timeout: 5000 }); await shot('04b-scan-again'); await p.keyboard.press('Escape'); await wait(300)
+  await openRow('brown leather sofa'); await p.waitForSelector('[aria-label=Decision]'); await shot('05-item')
   await p.evaluate(() => { const g = document.querySelector('[role=radiogroup][aria-label=Decision]'); [...g.querySelectorAll('[role=radio], button, input')].find(x => (x.innerText || x.closest('label')?.innerText || '').trim() === 'Sell')?.click() })
   await until('Photos for selling'); await shot('06-item-sell')
   await tapLabel('Living room'); await until('Declutter this Space'); await click('Declutter this Space'); await until(' of '); await shot('07-declutter-card')
-  await tapLabel('Stop decluttering'); await until('Digital inventory'); await tapLabel('Your Spaces'); await until('Your Spaces'); await shot('08-your-spaces')
-  await p.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.startsWith('People'))?.click()); await until('The people you live with'); await shot('09-people')
-  await tapLabel('Your Spaces'); await until('Your Spaces')
-  await p.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.startsWith('For sale'))?.click()); await until('To sell'); await shot('10-for-sale')
+  await tapLabel('Stop decluttering'); await until('Things ('); await tapLabel('Your home'); await until('Your home'); await shot('08-home')
+  await tapLabel('Add people'); await until('The people you live with'); await shot('09-people')
+  await tapLabel('Back'); await until('Your home')
+  await tapLabel('For sale and letting go'); await until('To sell'); await shot('10-for-sale')
 } catch (err) {
   console.log('STOPPED', err.message); await p.screenshot({ path: `${OUT}/stopped.png`, fullPage: true })
 }

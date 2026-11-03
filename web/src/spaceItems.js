@@ -15,7 +15,7 @@ export function sortItems({ result, itemChoices = {}, areaChoices = {} }) {
   }
 }
 
-export const countLabel = n => (n === 1 ? '1 item' : `${n} items`)
+export const countLabel = (n, noun = 'item') => (n === 1 ? `1 ${noun}` : `${n} ${noun}s`)
 export const scannedDay = ms => new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 export const scannedAt = ms => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 

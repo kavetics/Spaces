@@ -46,24 +46,29 @@ export function ShareVoteLink({ space, people, primary = true }) {
   )
 }
 
-/** On a Space's page: the family vote in one line, and one button for what to do next. */
+/** In a Space's Decisions: the family vote in one line, and one button for what to do next. */
 export function VoteCard({ space, results, onAsk, onOpen }) {
   const link = space.voteLink
-  let line = 'Ask what to keep, sell or let go.'
-  let button = <Button label="Ask family to vote" variant="primary" onClick={onAsk} />
-  if (link) {
-    const { voted, waiting } = turnout(space, results)
-    line = link.final
-      ? `Ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
-      : `${voted.length ? `${andList(voted)} voted` : 'No votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
-    button = <Button label={link.final ? 'See results' : 'See votes'} variant="primary" onClick={onOpen} />
+  if (!link) {
+    return (
+      <HStack gap={2} vAlign="center" hAlign="between">
+        <Text as="p">Family vote</Text>
+        <Button label="Ask family" size="sm" onClick={onAsk} />
+      </HStack>
+    )
   }
+  const { voted, waiting } = turnout(space, results)
+  const line = link.final
+    ? `Ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
+    : `${voted.length ? `${andList(voted)} voted` : 'No votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
   return (
-    <VStack gap={2} hAlign="start" className="declutter-resume">
-      <Heading level={2}>Family vote</Heading>
-      <Text as="p" color="secondary">{line}</Text>
-      {button}
-    </VStack>
+    <HStack gap={2} vAlign="center" hAlign="between">
+      <VStack gap={0}>
+        <Text as="p">Family vote</Text>
+        <Text as="p" type="supporting" color="secondary">{line}</Text>
+      </VStack>
+      <Button label={link.final ? 'See results' : 'See votes'} size="sm" onClick={onOpen} />
+    </HStack>
   )
 }
 
