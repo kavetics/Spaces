@@ -10,6 +10,7 @@ import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import PersonForm from './PersonForm.jsx'
+import { phoneNumber } from './phone.js'
 import './Inventory.css'
 
 // The Contact Picker works in Chrome on Android. Safari has it behind a setting; computers don't have it.
@@ -30,7 +31,7 @@ export default function People({ people, spaces, onChange, onBack }) {
       const picked = await navigator.contacts.select(['name', 'tel'], { multiple: true })
       const known = new Set(people.map(p => `${p.name.toLowerCase()}|${p.phone}`))
       const added = picked
-        .map(c => ({ name: (c.name?.[0] ?? '').trim().slice(0, 40), phone: (c.tel?.[0] ?? '').replace(/[^\d+]/g, '').slice(0, 20) }))
+        .map(c => ({ name: (c.name?.[0] ?? '').trim().slice(0, 40), phone: c.tel?.map(phoneNumber).find(Boolean) ?? '' })) // the first number in full international form
         .filter(c => c.name && !known.has(`${c.name.toLowerCase()}|${c.phone}`))
         .map(c => ({ id: newId(), ...c, relationship: '', spaceIds: [] }))
       if (!added.length) return

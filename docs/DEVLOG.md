@@ -365,3 +365,7 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** one link per Space. The server keeps only item names, 320 px pictures, asking prices and voters' names, in two Supabase tables with no public access, deleted after 14 days. The owner's token stays on the phone; the server keeps its hash. Voters never see others' votes or the owner's decisions. Plain code checks every link and vote (known items, known choices, voters on the list, size limits, per-address request limits). "Not sure" became "Unsure" so all four choices fit a phone screen.
 - **Learned:** pictures for a link are about 20 to 35 KB each. Local tests keep votes in memory (`VOTES_STORE=memory`); the real tables need `server/sql/vote_links.sql` run in Supabase.
 - **Next:** run the SQL, try a link with family on their own phones, then README and the video.
+
+## 2026-11-02: Phone numbers in full international form
+- **Done:** the person form checks phone numbers and shows "For WhatsApp: +1 512 555 0101" as you type. A number that can't be a full one (like "555 0101") is refused with an example. Contact imports and the WhatsApp button use the same rules.
+- **Decisions:** numbers are saved as + country code + digits, the form WhatsApp links need. One assumption only: a 10-digit number without a country code is a US number. Older saved numbers that aren't full get no WhatsApp button, rather than a link to the wrong person.

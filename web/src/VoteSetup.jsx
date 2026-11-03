@@ -10,19 +10,22 @@ import { IconButton } from '@astryxdesign/core/IconButton'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import { createVoteLink } from './api.js'
+import { phoneNumber } from './phone.js'
 import { shareItem } from './share.js'
 import { countLabel, sortItems } from './spaceItems.js'
 import { MAX_VOTE_ITEMS, linkPayload, turnout, voteDay, voteMessage, voteUrl } from './votes.js'
 import './Inventory.css'
 
 const whatsappTo = (phone, text) => `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`
+// Numbers saved before the format check may lack a country code; only full numbers get a button.
+const fullNumber = person => phoneNumber(person.phone)
 
 /** Sending the link: the share sheet, WhatsApp straight to someone with a saved number, or copying it. */
 export function ShareVoteLink({ space, people }) {
   const [status, setStatus] = useState(null)
   const link = space.voteLink
   const message = voteMessage(space, link.id)
-  const withPhones = people.filter(p => p.phone && link.voters.some(v => v.id === p.id))
+  const withPhones = people.filter(p => fullNumber(p) && link.voters.some(v => v.id === p.id))
 
   async function share() {
     const how = await shareItem(null, message)
@@ -36,7 +39,7 @@ export function ShareVoteLink({ space, people }) {
     <VStack gap={2}>
       <Button label="Share link" variant="primary" size="lg" onClick={share} />
       {withPhones.map(p => (
-        <Button key={p.id} label={`Send to ${p.name} on WhatsApp`} size="lg" onClick={() => { window.open(whatsappTo(p.phone, message), '_blank', 'noopener'); setStatus(`Opened WhatsApp for ${p.name}.`) }} />
+        <Button key={p.id} label={`Send to ${p.name} on WhatsApp`} size="lg" onClick={() => { window.open(whatsappTo(fullNumber(p), message), '_blank', 'noopener'); setStatus(`Opened WhatsApp for ${p.name}.`) }} />
       ))}
       <Button label="Copy link" variant="ghost" onClick={copy} />
       {status && <Text as="p" role="status">{status}</Text>}
