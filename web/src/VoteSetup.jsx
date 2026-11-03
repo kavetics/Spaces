@@ -167,8 +167,9 @@ export default function VoteSetup({ space, people, preselect, onCreated, onBack,
           The chosen items' names, small pictures and asking prices, and the voters' names, are saved on the Spaces server. Anyone with the link can see them. Phone numbers and relationships stay on this phone. The link and its votes are deleted after 14 days, or when you stop it.
         </Text>
       </VStack>
+      {/* Above the button, where it's seen: below it, the message fell off the bottom of the screen. */}
+      {problem && <Banner status="error" title="The link wasn't made." description={problem} />}
       <Button label="Create vote link" variant="primary" size="lg" isDisabled={!ready} isLoading={creating} onClick={create} />
-      {problem && <Text as="p" role="alert">{problem}</Text>}
     </VStack>
   )
 }

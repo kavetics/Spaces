@@ -24,7 +24,10 @@ export async function supabase(path, { method = 'GET', body, prefer } = {}) {
   });
   if (!res.ok) {
     // A paused or unreachable project shouldn't look like the person did something wrong.
-    console.error(`Supabase ${method} ${path}: ${res.status} ${await res.text().catch(() => '')}`);
+    const detail = await res.text().catch(() => '');
+    console.error(`Supabase ${method} ${path}: ${res.status} ${detail}`);
+    // A table that was never created is a setup step on the server, not a passing outage.
+    if (detail.includes('PGRST205')) throw Object.assign(new Error("This isn't set up on the server yet: its storage tables are missing."), { status: 503 });
     throw Object.assign(new Error("Couldn't reach shared storage. Try again later."), { status: 502 });
   }
   // Writes asked to return nothing come back with an empty body.
