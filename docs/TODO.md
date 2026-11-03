@@ -21,7 +21,8 @@ Flow: ① consent → ② scan (in-app camera) → ③ reading your room → ④
 - [x] Keep the latest scan on the phone through sleep and reloads
 - [x] Keep many Spaces on the phone, with a Your Spaces page
 - [x] Let people correct item names and add items by hand
-- [ ] Store scans on the server (Supabase) for sharing and voting
+- [x] People at home, and family vote links for one Space (Supabase, 14 days)
+- [ ] Store whole scans on the server, for sharing a Space between phones
 - [ ] Block 3D view: Spark estimates where items stand and how big they are, then code draws a simple rotating room with tappable items. Positions are estimates.
 - [x] Scanning guide; scan a Space in several parts
 - [ ] Roadmap: approximate around-you map (rings in feet), only if time allows

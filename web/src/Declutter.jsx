@@ -40,7 +40,7 @@ function Resume({ space, saved, onResume, onRestart, onCancel }) {
   )
 }
 
-function Card({ space, item, place, total, canUndo, onDecide, onSellDone, onUndo, onSkip, onChange, onStop }) {
+function Card({ space, item, place, total, canUndo, familyVotes, onDecide, onSellDone, onUndo, onSkip, onChange, onStop }) {
   const top = useRef(null)
   const current = decisionOf(item.status)
   useEffect(() => {
@@ -62,6 +62,7 @@ function Card({ space, item, place, total, canUndo, onDecide, onSellDone, onUndo
         <Heading level={1}>{item.quantity > 1 ? `${item.name} × ${item.quantity}` : item.name}</Heading>
         <Text as="p" color="secondary">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>
         {current && <Text as="p" type="label">Currently: {decisionLabel(current)}</Text>}
+        {familyVotes && <Text as="p" type="label">Family votes: {familyVotes}</Text>}
       </VStack>
       <HStack gap={2} className="declutter-choices">
         {DECISIONS.map(([id, name]) => (
@@ -91,7 +92,7 @@ function money(item) {
   return null
 }
 
-function Summary({ space, stack, onAgain, onDone }) {
+function Summary({ space, stack, onAgain, onDone, onAskFamily }) {
   const items = stack.map(id => space.result.items.find(i => i.id === id)).filter(Boolean)
   const selling = items.filter(item => decisionOf(item.status) === 'sell')
   const lettingGo = items.filter(item => decisionOf(item.status) === 'donate')
@@ -115,7 +116,8 @@ function Summary({ space, stack, onAgain, onDone }) {
           : <Text as="p" color="secondary">Nothing to let go.</Text>}
       </VStack>
       <Button label="Done" variant="primary" size="lg" onClick={onDone} />
-      <Button label="Go again" onClick={onAgain} />
+      <Button label="Ask family to vote" onClick={onAskFamily} />
+      <Button label="Go again" variant="ghost" onClick={onAgain} />
     </VStack>
   )
 }
@@ -134,7 +136,7 @@ export const declutterLeft = spaceId => loadChat(sessionKey(spaceId)).then(s => 
 /** Forget a Space's place, when the Space is deleted or rescanned (its item ids start over). */
 export const forgetDeclutter = spaceId => deleteChat(sessionKey(spaceId))
 
-export default function Declutter({ space, onUpdateItem, onExit }) {
+export default function Declutter({ space, familyVotes, onAskFamily, onUpdateItem, onExit }) {
   const [stack, setStack] = useState(null)
   const [place, setPlace] = useState(0)
   const [history, setHistory] = useState([]) // what each decision replaced, so Undo can put it back
@@ -177,7 +179,7 @@ export default function Declutter({ space, onUpdateItem, onExit }) {
       />
     )
   }
-  if (place >= stack.length) return <Summary space={space} stack={stack} onDone={onExit} onAgain={start} />
+  if (place >= stack.length) return <Summary space={space} stack={stack} onDone={onExit} onAgain={start} onAskFamily={onAskFamily} />
 
   const itemId = stack[place]
   const item = space.result?.items.find(i => i.id === itemId)
@@ -209,6 +211,7 @@ export default function Declutter({ space, onUpdateItem, onExit }) {
       place={place + 1}
       total={stack.length}
       canUndo={history.length > 0}
+      familyVotes={familyVotes(itemId)}
       onDecide={decide}
       onSellDone={() => setPlace(p => p + 1)}
       onSkip={() => setPlace(p => p + 1)}

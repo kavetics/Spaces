@@ -79,15 +79,18 @@ export async function makePictures(space) {
 }
 
 /** A whole photo as a saved picture, for items people add by hand. */
-export async function pictureOf(photo) {
+export async function pictureOf(photo, px = PICTURE_PX) {
   const image = await decode(photo)
   try {
     const { width, height } = sizeOf(image)
-    return draw(image, 0, 0, width, height, PICTURE_PX)
+    return draw(image, 0, 0, width, height, px)
   } finally {
     release(image)
   }
 }
+
+/** A smaller copy of a saved picture, for sending in a family vote link. */
+export const votePicture = async picture => pictureOf(await (await fetch(picture)).blob(), 320)
 
 /** Whether a Space still needs its pictures made. */
 export const needsPictures = space => Boolean(space.result) && (space.cover == null || space.result.items.some(i => i.view && !i.picture))

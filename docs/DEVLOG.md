@@ -359,3 +359,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** people are added, never detected. The list stays on the phone: names, phones and relationships are never sent anywhere. Stored in the existing key-value store, so no database upgrade.
 - **Learned:** the Contact Picker isn't in any iPhone browser by default, so the demo adds people by hand.
 - **Next:** the family vote link, one Space per link.
+
+## 2026-11-02: Family vote links
+- **Done:** "Ask family to vote" on a Space, an item or the end of Declutter. Choose items (up to 25) and voters (people on the list), see what's shared, and send the link by the share sheet, WhatsApp to a saved number, or copy. Family open `/vote/<id>`, pick their name, vote Keep, Sell, Let go or Unsure, and can come back to change. The owner sees "Voted / Waiting for" on the Space and a tally on each item and Declutter card. A newer link replaces the older one; Stop deletes it.
+- **Decisions:** one link per Space. The server keeps only item names, 320 px pictures, asking prices and voters' names, in two Supabase tables with no public access, deleted after 14 days. The owner's token stays on the phone; the server keeps its hash. Voters never see others' votes or the owner's decisions. Plain code checks every link and vote (known items, known choices, voters on the list, size limits, per-address request limits). "Not sure" became "Unsure" so all four choices fit a phone screen.
+- **Learned:** pictures for a link are about 20 to 35 KB each. Local tests keep votes in memory (`VOTES_STORE=memory`); the real tables need `server/sql/vote_links.sql` run in Supabase.
+- **Next:** run the SQL, try a link with family on their own phones, then README and the video.

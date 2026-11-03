@@ -2,7 +2,7 @@
 
 async function json(res) {
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { status: res.status });
   return data;
 }
 
@@ -114,3 +114,24 @@ export async function shrinkPhoto(file, maxSide = 1280) {
   canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
 }
+
+// Family vote links. The owner's token stays on their phone and proves they made the link.
+async function voteCall(path, { method = 'GET', body, ownerToken } = {}) {
+  try {
+    return await json(await fetch(`/api/votes${path}`, {
+      method,
+      headers: { ...(body && { 'Content-Type': 'application/json' }), ...(ownerToken && { Authorization: `Bearer ${ownerToken}` }) },
+      body: body && JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    }));
+  } catch (err) {
+    if (isConnectionError(err)) throw new Error("Couldn't connect. Check your connection and try again.");
+    throw err;
+  }
+}
+export const createVoteLink = link => voteCall('', { method: 'POST', body: link });
+export const getVoteLink = id => voteCall(`/${encodeURIComponent(id)}`);
+export const getMyVotes = (id, voter) => voteCall(`/${encodeURIComponent(id)}/answers/${encodeURIComponent(voter)}`);
+export const sendMyVotes = (id, voter, answers) => voteCall(`/${encodeURIComponent(id)}/answers/${encodeURIComponent(voter)}`, { method: 'PUT', body: { answers } });
+export const getVoteResults = (id, ownerToken) => voteCall(`/${encodeURIComponent(id)}/results`, { ownerToken });
+export const deleteVoteLink = (id, ownerToken) => voteCall(`/${encodeURIComponent(id)}`, { method: 'DELETE', ownerToken });

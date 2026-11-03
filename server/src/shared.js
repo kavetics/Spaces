@@ -7,7 +7,7 @@ const MAX_ITEMS = 500;
 const text = (value, max = 200) => String(value ?? '').slice(0, max);
 const price = v => (typeof v === 'number' && v > 0 && v < 1e6 ? Math.round(v) : null);
 
-async function supabase(path, { method = 'GET', body, prefer } = {}) {
+export async function supabase(path, { method = 'GET', body, prefer } = {}) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) throw Object.assign(new Error('Sharing is not set up on this server.'), { status: 503 });

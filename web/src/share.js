@@ -36,6 +36,3 @@ export async function shareItem(file, text) {
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   return 'whatsapp'
 }
-
-export const familyQuestion = (item, spaceName) =>
-  `Keep, sell or let go? Our ${item.name} from ${spaceName}. Reply with your vote.`

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
-import { buildInventory, findRepeats, shrinkPhoto } from './api.js'
+import { buildInventory, deleteVoteLink, findRepeats, getVoteResults, shrinkPhoto } from './api.js'
 import AskMuse from './AskMuse.jsx'
 import Declutter, { declutterLeft, forgetDeclutter } from './Declutter.jsx'
 import Inventory from './Inventory.jsx'
@@ -10,6 +10,8 @@ import People from './People.jsx'
 import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
+import VoteSetup, { VoteStatus } from './VoteSetup.jsx'
+import { tally, tallyLine } from './votes.js'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { makePictures, needsPictures } from './crop.js'
 import { categoryOf, sortItems } from './spaceItems.js'
@@ -30,6 +32,8 @@ export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
   const [people, setPeople] = useState([]) // the household, added by hand or from contacts
+  const [voteSetup, setVoteSetup] = useState(null) // making a vote link: { preselect: item ids or null for all, from: screen }
+  const [voteResults, setVoteResults] = useState({}) // Space id → its family votes, as the server last sent them
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
@@ -213,6 +217,7 @@ export default function App() {
       // Both were about the items this scan replaces.
       deleteChat(previous.id)
       forgetDeclutter(previous.id)
+      if (previous.voteLink) deleteVoteLink(previous.voteLink.id, previous.voteLink.ownerToken).catch(() => {}) // it asked about the old items
     }
     setSpaces(current => (previous ? current.map(s => (s.id === fresh.id ? fresh : s)) : [...current, fresh]))
     setFailed(({ [fresh.id]: _, ...rest }) => rest)
@@ -236,6 +241,38 @@ export default function App() {
   }
 
   // Decisions and sale details live on the item, with the time they last changed.
+  // A Space's family votes, fetched whenever its page, an item or Declutter opens.
+  const voteLinkId = open?.voteLink?.id
+  useEffect(() => {
+    const link = open?.voteLink
+    if (!link || !['space', 'item', 'declutter'].includes(screen)) return
+    let cancelled = false
+    getVoteResults(link.id, link.ownerToken).then(
+      results => { if (!cancelled) setVoteResults(v => ({ ...v, [open.id]: results })) },
+      err => {
+        // Ended or deleted on the server: forget it here too. Other errors leave the last votes showing.
+        if (!cancelled && [404, 410].includes(err.status)) change(open.id, ({ voteLink: _, ...s }) => s)
+      },
+    )
+    return () => { cancelled = true }
+    // Refetch per screen and per link, not on every change to the Space.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, open?.id, voteLinkId])
+
+  const askFamily = (preselect = null, from = 'space') => { setVoteSetup({ preselect, from }); setScreen('vote-setup') }
+
+  async function stopVote(space) {
+    try {
+      await deleteVoteLink(space.voteLink.id, space.voteLink.ownerToken)
+    } catch (err) {
+      if (err.status !== 404 && err.status !== 410) throw err
+    }
+    change(space.id, ({ voteLink: _, ...s }) => s)
+    setVoteResults(({ [space.id]: _, ...rest }) => rest)
+  }
+
+  const familyVotes = (space, itemId) => tallyLine(tally(space, voteResults[space.id], itemId))
+
   function updateItem(spaceId, itemId, patch) {
     change(spaceId, s => ({
       ...s,
@@ -283,6 +320,7 @@ export default function App() {
     await deleteSpace(open.id)
     deleteChat(open.id)
     forgetDeclutter(open.id)
+    if (open.voteLink) deleteVoteLink(open.voteLink.id, open.voteLink.ownerToken).catch(() => {})
     const left = spaces.filter(s => s.id !== open.id)
     setSpaces(left)
     setOpenId(null)
@@ -382,6 +420,10 @@ export default function App() {
           onDeclutter={() => setScreen('declutter')}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
+          onAskFamily={() => askFamily()}
+          voteStatus={open.voteLink && (
+            <VoteStatus space={open} people={people} results={voteResults[open.id]} onNewVote={() => askFamily()} onStop={() => stopVote(open)} />
+          )}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
@@ -397,6 +439,8 @@ export default function App() {
           space={open}
           item={openItem}
           onChange={patch => updateItem(open.id, openItem.id, patch)}
+          familyVotes={familyVotes(open, openItem.id)}
+          onAskFamily={() => askFamily([openItem.id], 'item')}
           backLabel={itemFrom ? 'Ask Muse' : undefined}
           autoDraft={Boolean(itemFrom)}
           onBack={() => setScreen(itemFrom ?? 'space')}
@@ -411,7 +455,29 @@ export default function App() {
       )}
 
       {screen === 'declutter' && open && (
-        <Declutter key={open.id} space={open} onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)} onExit={() => setScreen('space')} />
+        <Declutter
+          key={open.id}
+          space={open}
+          familyVotes={itemId => familyVotes(open, itemId)}
+          onAskFamily={() => askFamily(null, 'space')}
+          onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)}
+          onExit={() => setScreen('space')}
+        />
+      )}
+
+      {screen === 'vote-setup' && open && (
+        <VoteSetup
+          key={open.id}
+          space={open}
+          people={people}
+          preselect={voteSetup?.preselect}
+          onCreated={voteLink => {
+            change(open.id, s => ({ ...s, voteLink }))
+            setVoteResults(v => ({ ...v, [open.id]: { votes: [] } }))
+          }}
+          onBack={() => setScreen(voteSetup?.from ?? 'space')}
+          onPeople={() => setScreen('people')}
+        />
       )}
 
       {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen('spaces')} onDraftListing={draftFromChat} />}    </>

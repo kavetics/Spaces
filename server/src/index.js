@@ -7,6 +7,7 @@ import { buildInventory } from './inventory.js';
 import { askMuse } from './ask.js';
 import { connector } from './connector.js';
 import { shared } from './shared.js';
+import { votes } from './votes.js';
 import { describeForSale } from './itemDetails.js';
 import { findRepeats } from './repeats.js';
 import { draftListing } from './listing.js';
@@ -17,10 +18,12 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 app.use(cors());
+app.set('trust proxy', 1); // Render's proxy: request limits count the visitor's address, not the proxy's
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/connector/v1', connector);
 app.use('/api/shared', shared);
+app.use('/api/votes', votes);
 
 // A whole home's inventory comes with each question, since it's stored on the phone.
 app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {

@@ -4,20 +4,51 @@
     {
       "name": "api",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "server", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "server",
+        "run",
+        "dev"
+      ],
       "port": 8787
     },
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "web", "run", "dev", "--", "--host"],
+      "runtimeArgs": [
+        "--prefix",
+        "web",
+        "run",
+        "dev",
+        "--",
+        "--host"
+      ],
       "port": 5173
     },
     {
       "name": "built",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["NODE_ENV=production", "PORT=8788", "node", "--env-file=.env", "server/src/index.js"],
+      "runtimeArgs": [
+        "NODE_ENV=production",
+        "PORT=8788",
+        "node",
+        "--env-file=.env",
+        "server/src/index.js"
+      ],
       "port": 8788
+    },
+    {
+      "name": "votes-test",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NODE_ENV=production",
+        "PORT=8789",
+        "VOTES_STORE=memory",
+        "node",
+        "--env-file=.env",
+        "server/src/index.js"
+      ],
+      "port": 8789
     }
   ]
 }

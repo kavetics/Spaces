@@ -10,23 +10,14 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { DECISIONS, byYou, decisionOf } from './itemFields.js'
 import ItemForm from './ItemForm.jsx'
-import { familyQuestion, shareItem, useSharePhoto } from './share.js'
 import SellForm from './SellForm.jsx'
 import { categoryOf, CATEGORIES } from './spaceItems.js'
 import './Inventory.css'
 
 /** One item: its decision, and when it's for sale, the photos and details a listing needs. */
-export default function ItemDetail({ space, item, onChange, onBack, onSave, backLabel, autoDraft }) {
+export default function ItemDetail({ space, item, onChange, onBack, onSave, backLabel, autoDraft, familyVotes, onAskFamily }) {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
-  const [asked, setAsked] = useState(null)
-  const photo = useSharePhoto(item)
-
-  // Family replies in the chat app; the person records the decision here. Votes in the app come later.
-  async function askFamily() {
-    const how = await shareItem(photo, familyQuestion(item, space.spaceName))
-    setAsked({ shared: 'Sent. Set the decision here once they reply.', whatsapp: 'Opened WhatsApp. Attach the photo there if you like.' }[how] ?? null)
-  }
   const category = CATEGORIES.find(([id]) => id === categoryOf(item))?.[1]
 
   return (
@@ -63,8 +54,8 @@ export default function ItemDetail({ space, item, onChange, onBack, onSave, back
           {DECISIONS.map(([id, name]) => <SegmentedControlItem key={id} value={id} label={name} />)}
         </SegmentedControl>
         <VStack gap={1} hAlign="start">
-          <Button label="Ask family" size="sm" onClick={askFamily} />
-          <Text type="supporting" color="secondary">{asked ?? 'Send its photo on WhatsApp or Messages for a vote.'}</Text>
+          {familyVotes && <Text type="label">Family votes: {familyVotes}</Text>}
+          <Button label="Ask family to vote" size="sm" onClick={onAskFamily} />
         </VStack>
       </VStack>
 

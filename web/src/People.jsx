@@ -46,7 +46,7 @@ export default function People({ people, spaces, onChange, onBack }) {
       <HStack><IconButton label="Your Spaces" icon={<Icon icon="chevronLeft" />} onClick={onBack} /></HStack>
       <VStack gap={1}>
         <Heading level={1}>People</Heading>
-        <Text as="p" color="secondary">The people you live with. Later, they can vote on what to keep, sell or let go. Saved on this phone only.</Text>
+        <Text as="p" color="secondary">The people you live with. They can vote on what to keep, sell or let go. Saved on this phone only.</Text>
       </VStack>
 
       {people.length > 0
