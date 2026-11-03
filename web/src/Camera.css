@@ -8,7 +8,8 @@
   color: var(--color-text-primary);
 }
 .space-scan-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.space-scan-flash { position: absolute; inset: 0; background: var(--color-text-primary); opacity: 0.6; pointer-events: none; }
+/* Each photo flashes the gold of the main buttons. */
+.space-scan-flash { position: absolute; inset: 0; background: var(--color-accent); opacity: 0.6; pointer-events: none; }
 .space-scan-message { position: absolute; inset: 0; }
 
 .space-scan-top, .space-scan-bottom { position: absolute; left: 0; right: 0; }
@@ -36,10 +37,11 @@
 /* Light marks get a dark edge so they stay visible on white walls and bright windows. */
 .space-scan-edge { fill: none; stroke: var(--color-background-body); stroke-width: 9; opacity: 0.55; }
 .space-scan-ring { fill: none; stroke: var(--color-text-primary); stroke-width: 3; opacity: 0.75; }
-.space-scan-ring.is-aligned { opacity: 1; }
-.space-scan-hold { fill: none; stroke: var(--color-text-primary); stroke-width: 6; rotate: -90deg; }
+/* The ring turns gold once the phone is lined up; the dot and the hold-still arc are always gold. */
+.space-scan-ring.is-aligned { stroke: var(--color-accent); opacity: 1; }
+.space-scan-hold { fill: none; stroke: var(--color-accent); stroke-width: 6; rotate: -90deg; }
 .space-scan-dot {
-  fill: var(--color-text-primary);
+  fill: var(--color-accent);
   stroke: var(--color-background-body);
   stroke-width: 3;
   transition: transform var(--duration-fast-min) linear;

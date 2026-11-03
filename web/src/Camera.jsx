@@ -7,7 +7,7 @@ import { IconButton } from '@astryxdesign/core/IconButton'
 import { Text } from '@astryxdesign/core/Text'
 import { Theme } from '@astryxdesign/core/theme'
 import { VStack } from '@astryxdesign/core/VStack'
-import { themes, defaultThemeSlug } from './astryx-themes'
+import { spacesTheme } from './spacesTheme.js'
 import { SCAN, cameraDirection, turnTo } from './sweep.js'
 import { grabFrame, useCamera } from './useCamera.js'
 import './Camera.css'
@@ -131,7 +131,7 @@ export default function Camera({ title, hint, onCapture, onBack, onUpload, onTip
   const message = { starting: 'Starting camera…', saving: 'Scan complete', error }[state]
 
   return (
-    <Theme theme={themes[defaultThemeSlug]} mode="dark">
+    <Theme theme={spacesTheme} mode="dark">
       <section className="space-scan" aria-label={title}>
         <video ref={video} className="space-scan-video" playsInline muted />
         {scanning && live && <Reticle live={live} />}
