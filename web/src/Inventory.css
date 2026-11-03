@@ -24,3 +24,12 @@
 .inventory-with-action { position: relative; }
 .inventory-action { position: absolute; inset-block-start: calc(var(--spacing-1) * -1); inset-inline-end: 0; z-index: 1; }
 .inventory-action-trigger > button[aria-expanded] { padding-inline-end: calc(var(--inventory-action-width, 4rem) + var(--spacing-2)); }
+
+/* While things are being found: rings pulse inward toward the warm light, one after another. */
+.scan-pulse { width: min(40vw, 10rem); }
+.scan-pulse-ring { fill: none; stroke: var(--color-border-emphasized); stroke-width: 1; animation: scan-pulse 2.4s ease-in-out infinite; }
+.scan-pulse-ring:nth-child(2) { animation-delay: 0.4s; }
+.scan-pulse-ring:nth-child(3) { animation-delay: 0.8s; }
+.scan-pulse-light { fill: var(--color-accent); }
+@keyframes scan-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .scan-pulse-ring { animation: none; opacity: 0.6; } }

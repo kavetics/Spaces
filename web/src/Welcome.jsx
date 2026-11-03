@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { Grid } from '@astryxdesign/core/Grid'
 import { Heading } from '@astryxdesign/core/Heading'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
+import tunnelArt from './assets/welcome-tunnel.webp'
 import './Welcome.css'
 
 const MIN_LOADING_MS = 1800 // long enough to read as a scan, not a flicker
@@ -35,9 +35,13 @@ export default function Welcome({ loadScanner, onAccept }) {
     return () => { cancelled = true }
   }, [loadScanner])
 
+  // The tunnel art (made with Meta's Muse Image) shows from the start: it's the loading screen while the
+  // scanner loads, and the words come up on its dark floor once it's ready.
   return (
-    <Center className="welcome" padding={6}>
-      {status === 'loading' && <ScanAnimation />}
+    <VStack className="welcome" hAlign="center" vAlign="end" gap={6} padding={6}>
+      <img className="welcome-art" src={tunnelArt} alt="" />
+
+      {status === 'loading' && <Text as="p" color="secondary" justify="center" role="status" className="welcome-loading">Getting the scanner ready…</Text>}
 
       {status === 'failed' && (
         <VStack gap={4} hAlign="center" role="alert">
@@ -47,14 +51,10 @@ export default function Welcome({ loadScanner, onAccept }) {
       )}
 
       {status === 'ready' && (
-        <VStack gap={8} hAlign="center">
-          <VStack gap={2} hAlign="center" className="welcome-title" onAnimationEnd={() => setShowButton(true)}>
-            <Heading level={1} type="display-1" justify="center">SPACES</Heading>
-            <Text as="p" type="large" color="secondary" justify="center">Scan a room. Spaces learns what's in your home, who shares it and what you've decided, and Muse can use it.</Text>
-            {/* The four parts of the model, so it's clear from the first screen what Spaces builds. */}
-            <Grid columns={2} gap={2} className="welcome-parts">
-              {['Things', 'People', 'Decisions', 'Muse'].map(part => <Text key={part} as="p" weight="medium" justify="center" className="welcome-part">{part}</Text>)}
-            </Grid>
+        <VStack gap={6} hAlign="center">
+          <VStack gap={3} hAlign="center" className="welcome-title" onAnimationEnd={() => setShowButton(true)}>
+            <Heading level={1} type="display-1" justify="center" className="welcome-name">SPACES</Heading>
+            <Text as="p" type="large" color="secondary" justify="center">Scan a room. Spaces learns your things, the people who share them and what you've decided, and Muse can use it.</Text>
           </VStack>
           {showButton && (
             <Center className="welcome-button">
@@ -63,6 +63,7 @@ export default function Welcome({ loadScanner, onAccept }) {
           )}
         </VStack>
       )}
+      <Text as="p" type="supporting" color="secondary" justify="center" className="welcome-credit">Art made with Muse Image</Text>
 
       <Dialog isOpen={askConsent} onOpenChange={setAskConsent} purpose="required" width={420}>
         <Layout
@@ -86,21 +87,6 @@ export default function Welcome({ loadScanner, onAccept }) {
           }
         />
       </Dialog>
-    </Center>
-  )
-}
-
-/** A scanner sweeping around a room, like the real scan does. */
-function ScanAnimation() {
-  return (
-    <svg className="welcome-scan" viewBox="0 0 100 100" role="img" aria-label="Loading the scanner">
-      <circle cx="50" cy="50" r="44" className="welcome-scan-ring" />
-      <circle cx="50" cy="50" r="28" className="welcome-scan-ring" />
-      <circle cx="50" cy="50" r="12" className="welcome-scan-ring" />
-      <g className="welcome-scan-sweep">
-        <line x1="50" y1="50" x2="50" y2="6" />
-        <circle cx="50" cy="6" r="3.5" />
-      </g>
-    </svg>
+    </VStack>
   )
 }

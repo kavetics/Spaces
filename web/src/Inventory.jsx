@@ -162,7 +162,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         <HStack>{backButton}</HStack>
         <VStack gap={4} hAlign="center" role="status">
           <Heading level={1}>{spaceName}</Heading>
-          <Spinner size="lg" />
+          <ScanPulse />
           <Text as="p" justify="center">{progressText(progress, frames.length)}</Text>
           <Text as="p" color="secondary" justify="center">This takes about 2 minutes. Keep your screen on.</Text>
         </VStack>
@@ -376,16 +376,28 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
             />
           )
           : (
-            <HStack gap={2} vAlign="center" hAlign="between">
+            <VStack gap={2} hAlign="start">
               <Text as="p" color="secondary">Ask about your things, people and decisions.</Text>
               <Button label="Ask Muse" size="sm" onClick={onAsk} />
-            </HStack>
+            </VStack>
           )}
         {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
       </VStack>
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>
+  )
+}
+
+/** Rings pulsing toward a small warm light while Muse looks through the photos, like the welcome tunnel. */
+function ScanPulse() {
+  return (
+    <svg className="scan-pulse" viewBox="0 0 120 120" role="img" aria-label="Finding things">
+      <circle className="scan-pulse-ring" cx="60" cy="60" r="54" />
+      <circle className="scan-pulse-ring" cx="60" cy="60" r="40" />
+      <circle className="scan-pulse-ring" cx="60" cy="60" r="26" />
+      <circle className="scan-pulse-light" cx="60" cy="60" r="10" />
+    </svg>
   )
 }
 

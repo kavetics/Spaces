@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import '@astryxdesign/core/reset.css'
 import '@astryxdesign/core/astryx.css'
 import { Theme } from '@astryxdesign/core/theme'
-import { themes, defaultThemeSlug } from './astryx-themes'
+import { spacesTheme } from './spacesTheme.js'
 import './index.css'
 import App from './App.jsx'
 import VotePage from './VotePage.jsx'
@@ -13,7 +13,7 @@ const voteId = location.pathname.match(/^\/vote\/([\w-]+)\/?$/)?.[1]
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Theme theme={themes[defaultThemeSlug]}>
+    <Theme theme={spacesTheme}>
       {voteId ? <VotePage id={voteId} /> : <App />}
     </Theme>
   </StrictMode>,
