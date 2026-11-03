@@ -373,3 +373,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-02: Votes are Keep, Sell or Let go
 - **Done:** removed "Unsure" from family votes. Voters skip an item instead; skipped items count no vote. The server no longer accepts it.
 - **Decisions:** it added a tap without telling the owner anything a skip doesn't.
+
+## 2026-11-02: For sale & letting go
+- **Done:** one page for everything marked Sell or Let go, across Spaces, with a Space filter. To sell: price, listing status, missing photos and family votes on each row, not-listed items first, an asking total, and a Sold section with the total so far. To let go: Mark gone moves an item to Done. Opened from Your Spaces (with a count), "See list" on a Space (filtered to it) and the Declutter summary; items open with Back to the page.
+- **Decisions:** across Spaces, unlike Declutter: it's a to-do list for selling and giving away, not a room-by-room pass. The only new field is `goneAt` on let-go items; the rest reuses decisions and listing status.
+- **Next:** iPhone run-through, README, accuracy numbers, video.

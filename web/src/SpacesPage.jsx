@@ -5,6 +5,7 @@ import { List, ListItem } from '@astryxdesign/core/List'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import { progress } from './itemFields.js'
+import { sellingButton } from './Selling.jsx'
 import { countLabel, scannedDay, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
@@ -31,7 +32,7 @@ function SpaceRow({ space, failed, onOpen }) {
 }
 
 /** Every Space on this phone, and the way to scan another. */
-export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, people, onPeople }) {
+export default function SpacesPage({ spaces, failed, processing, onOpen, onScanAnother, onAsk, onSelling, people, onPeople }) {
   return (
     <VStack gap={4} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
@@ -43,6 +44,8 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
       </List>
       {processing && <Text as="p" color="secondary" justify="center">You can scan another Space when this one finishes.</Text>}
       {spaces.some(s => s.result) && <Button label="Ask Muse about all Spaces" variant="primary" size="lg" onClick={onAsk} />}
-      <Button label={people.length ? `People · ${people.length}` : 'People'} size="lg" onClick={onPeople} />    </VStack>
+      {sellingButton(spaces) && <Button label={sellingButton(spaces)} size="lg" onClick={onSelling} />}
+      <Button label={people.length ? `People · ${people.length}` : 'People'} size="lg" onClick={onPeople} />
+    </VStack>
   )
 }

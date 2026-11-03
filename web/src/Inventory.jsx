@@ -17,7 +17,7 @@ import { Text } from '@astryxdesign/core/Text'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { shrinkPhoto } from './api.js'
-import { byYou, decisionLabel, progress as itemProgress } from './itemFields.js'
+import { byYou, decisionLabel, decisionOf, progress as itemProgress } from './itemFields.js'
 import ItemForm from './ItemForm.jsx'
 import { CATEGORIES, categoryOf, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
@@ -30,7 +30,7 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, onAskFamily, voteStatus }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, onAskFamily, voteStatus, onSelling }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -283,7 +283,12 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           </List>
         </VStack>
       )}
-      {inSpace.length > 0 && <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>}
+      {inSpace.length > 0 && (
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Text as="p" color="secondary">{progressLine(itemProgress(inSpace))}</Text>
+          {inSpace.some(i => ['sell', 'donate'].includes(decisionOf(i.status))) && <Button label="See list" variant="ghost" size="sm" onClick={onSelling} />}
+        </HStack>
+      )}
       {inSpace.length > 0 && (
         // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
         <VStack className="inventory-with-action">

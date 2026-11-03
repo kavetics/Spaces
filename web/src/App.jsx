@@ -9,6 +9,7 @@ import ItemDetail from './ItemDetail.jsx'
 import People from './People.jsx'
 import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
+import Selling from './Selling.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import VoteSetup, { VoteStatus } from './VoteSetup.jsx'
 import { tally, tallyLine } from './votes.js'
@@ -37,7 +38,8 @@ export default function App() {
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
-  const [itemFrom, setItemFrom] = useState(null) // an item opened from Ask Muse goes back there, with its listing drafting
+  const [itemFrom, setItemFrom] = useState(null) // an item opened from Ask Muse or the selling page goes back there
+  const [selling, setSelling] = useState({ spaceId: 'all', tab: 'sell', from: 'spaces' }) // the For sale & letting go page's filter and tab
   const [leftToDeclutter, setLeftToDeclutter] = useState({}) // Space id → items left in its saved Declutter session
   const [showGuide, setShowGuide] = useState(false)
   const [parts, setParts] = useState(1) // parts of the open Space scanned in this go, for the "Is there more?" screen
@@ -241,23 +243,27 @@ export default function App() {
   }
 
   // Decisions and sale details live on the item, with the time they last changed.
-  // A Space's family votes, fetched whenever its page, an item or Declutter opens.
-  const voteLinkId = open?.voteLink?.id
+  // Family votes, fetched whenever a Space's page, an item or Declutter opens, and for every Space on
+  // the For sale & letting go page.
+  const votesFor = screen === 'selling' ? spaces.filter(s => s.voteLink) : open?.voteLink && ['space', 'item', 'declutter'].includes(screen) ? [open] : []
+  const voteLinkIds = votesFor.map(s => s.voteLink.id).join()
   useEffect(() => {
-    const link = open?.voteLink
-    if (!link || !['space', 'item', 'declutter'].includes(screen)) return
     let cancelled = false
-    getVoteResults(link.id, link.ownerToken).then(
-      results => { if (!cancelled) setVoteResults(v => ({ ...v, [open.id]: results })) },
-      err => {
-        // Ended or deleted on the server: forget it here too. Other errors leave the last votes showing.
-        if (!cancelled && [404, 410].includes(err.status)) change(open.id, ({ voteLink: _, ...s }) => s)
-      },
-    )
+    for (const space of votesFor) {
+      getVoteResults(space.voteLink.id, space.voteLink.ownerToken).then(
+        results => { if (!cancelled) setVoteResults(v => ({ ...v, [space.id]: results })) },
+        err => {
+          // Ended or deleted on the server: forget it here too. Other errors leave the last votes showing.
+          if (!cancelled && [404, 410].includes(err.status)) change(space.id, ({ voteLink: _, ...s }) => s)
+        },
+      )
+    }
     return () => { cancelled = true }
-    // Refetch per screen and per link, not on every change to the Space.
+    // Refetch per screen and per set of links, not on every change to a Space.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen, open?.id, voteLinkId])
+  }, [screen, voteLinkIds])
+
+  const openSelling = (spaceId = 'all', from = screen) => { setSelling(s => ({ ...s, spaceId, from })); setScreen('selling') }
 
   const askFamily = (preselect = null, from = 'space') => { setVoteSetup({ preselect, from }); setScreen('vote-setup') }
 
@@ -347,6 +353,7 @@ export default function App() {
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
           onAsk={() => setScreen('ask-all')}
+          onSelling={() => openSelling('all', 'spaces')}
           people={people}
           onPeople={() => setScreen('people')}
         />
@@ -418,6 +425,7 @@ export default function App() {
           onAddItem={fields => addItem(open.id, fields)}
           onBack={() => setScreen('spaces')}
           onDeclutter={() => setScreen('declutter')}
+          onSelling={() => openSelling(open.id, 'space')}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
           onAskFamily={() => askFamily()}
@@ -441,8 +449,8 @@ export default function App() {
           onChange={patch => updateItem(open.id, openItem.id, patch)}
           familyVotes={familyVotes(open, openItem.id)}
           onAskFamily={() => askFamily([openItem.id], 'item')}
-          backLabel={itemFrom ? 'Ask Muse' : undefined}
-          autoDraft={Boolean(itemFrom)}
+          backLabel={itemFrom === 'selling' ? 'For sale & letting go' : itemFrom ? 'Ask Muse' : undefined}
+          autoDraft={Boolean(itemFrom) && itemFrom !== 'selling'} // from Ask Muse, its listing starts drafting
           onBack={() => setScreen(itemFrom ?? 'space')}
           onSave={() => {
             if (itemFrom) { setScreen(itemFrom); return }
@@ -460,8 +468,23 @@ export default function App() {
           space={open}
           familyVotes={itemId => familyVotes(open, itemId)}
           onAskFamily={() => askFamily(null, 'space')}
+          onSelling={() => openSelling('all', 'space')}
           onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)}
           onExit={() => setScreen('space')}
+        />
+      )}
+
+      {screen === 'selling' && (
+        <Selling
+          spaces={spaces}
+          spaceId={spaces.some(s => s.id === selling.spaceId) ? selling.spaceId : 'all'}
+          tab={selling.tab}
+          onSpace={spaceId => setSelling(s => ({ ...s, spaceId }))}
+          onTab={tab => setSelling(s => ({ ...s, tab }))}
+          familyVotes={familyVotes}
+          onOpenItem={(spaceId, itemId) => { setOpenId(spaceId); setOpenItemId(itemId); setItemFrom('selling'); setScreen('item') }}
+          onGone={(spaceId, itemId, gone) => updateItem(spaceId, itemId, { goneAt: gone ? new Date().toISOString() : null })}
+          onBack={() => setScreen(selling.from === 'space' && open ? 'space' : 'spaces')}
         />
       )}
 

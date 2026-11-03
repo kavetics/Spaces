@@ -92,7 +92,7 @@ function money(item) {
   return null
 }
 
-function Summary({ space, stack, onAgain, onDone, onAskFamily }) {
+function Summary({ space, stack, onAgain, onDone, onAskFamily, onSelling }) {
   const items = stack.map(id => space.result.items.find(i => i.id === id)).filter(Boolean)
   const selling = items.filter(item => decisionOf(item.status) === 'sell')
   const lettingGo = items.filter(item => decisionOf(item.status) === 'donate')
@@ -116,6 +116,7 @@ function Summary({ space, stack, onAgain, onDone, onAskFamily }) {
           : <Text as="p" color="secondary">Nothing to let go.</Text>}
       </VStack>
       <Button label="Done" variant="primary" size="lg" onClick={onDone} />
+      <Button label="See everything for sale & letting go" onClick={onSelling} />
       <Button label="Ask family to vote" onClick={onAskFamily} />
       <Button label="Go again" variant="ghost" onClick={onAgain} />
     </VStack>
@@ -136,7 +137,7 @@ export const declutterLeft = spaceId => loadChat(sessionKey(spaceId)).then(s => 
 /** Forget a Space's place, when the Space is deleted or rescanned (its item ids start over). */
 export const forgetDeclutter = spaceId => deleteChat(sessionKey(spaceId))
 
-export default function Declutter({ space, familyVotes, onAskFamily, onUpdateItem, onExit }) {
+export default function Declutter({ space, familyVotes, onAskFamily, onSelling, onUpdateItem, onExit }) {
   const [stack, setStack] = useState(null)
   const [place, setPlace] = useState(0)
   const [history, setHistory] = useState([]) // what each decision replaced, so Undo can put it back
@@ -179,7 +180,7 @@ export default function Declutter({ space, familyVotes, onAskFamily, onUpdateIte
       />
     )
   }
-  if (place >= stack.length) return <Summary space={space} stack={stack} onDone={onExit} onAgain={start} onAskFamily={onAskFamily} />
+  if (place >= stack.length) return <Summary space={space} stack={stack} onDone={onExit} onAgain={start} onAskFamily={onAskFamily} onSelling={onSelling} />
 
   const itemId = stack[place]
   const item = space.result?.items.find(i => i.id === itemId)
