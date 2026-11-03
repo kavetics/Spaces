@@ -88,8 +88,12 @@ export const deleteSpace = id => quietly((pending.get(id) ?? Promise.resolve()).
 export const loadSpaces = () => quietly(run('readonly', s => s.getAll()))
   .then(spaces => (spaces ?? []).map(usable).sort((a, b) => a.createdAt - b.createdAt))
 
-// One saved chat per Space, plus 'all' for the one about every Space. The same store keeps
-// the Declutter session under 'declutter'.
+// The Ask Muse chat is saved under 'all'. The same store keeps each Space's Declutter place under
+// 'declutter:<id>', and the household list under 'people'.
 export const saveChat = (key, messages) => quietly(run('readwrite', s => s.put(messages, key), CHATS))
 export const loadChat = key => quietly(run('readonly', s => s.get(key), CHATS))
 export const deleteChat = key => quietly(run('readwrite', s => s.delete(key), CHATS))
+
+/** people: [{ id, name, relationship, phone, spaceIds }]. Only on this phone. */
+export const savePeople = people => saveChat('people', people)
+export const loadPeople = () => loadChat('people').then(people => people ?? [])

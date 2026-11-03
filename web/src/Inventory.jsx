@@ -30,7 +30,7 @@ const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -222,6 +222,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           </HStack>
         </HStack>
         <Text color="secondary">Scanned {scannedAt(savedAt)}</Text>
+        {usedBy?.length > 0 && <Text color="secondary">Used by {andList(usedBy)}</Text>}
         {SHOW_SHARING && <Switch
           label="Share with Muse"
           description="Sends this Space's item names and details to your Spaces server, so the Muse app can read them. Photos stay on this phone."
@@ -343,6 +344,8 @@ function statusLine(item) {
   const priced = item.status === 'sell' && value ? ` · $${value}${item.details?.askingPrice ? '' : ' AI estimate'}` : ''
   return `${decisionLabel(item.status)}${priced}`
 }
+
+const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
 
 function progressLine({ decided, total, selling, value }) {
   const sale = selling ? ` · ${selling} to sell${value ? `, about $${value}` : ''}` : ''

@@ -353,3 +353,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-02: One Ask Muse, Add next to the inventory
 - **Done:** removed Ask Muse from each Space's page; the chat on Your Spaces covers every Space. Declutter this Space is now the Space page's main button. "Add an item" sits on the Digital inventory heading row.
 - **Decisions:** one chat is simpler, and Muse already sees every Space in it, so a question about one room still works ("in the living room, ...").
+
+## 2026-11-02: People at home
+- **Done:** a People page from Your Spaces: add people by hand (name, relationship, phone, the Spaces they use), edit or remove them. Each Space shows "Used by ...". Where the browser has the Contact Picker (Chrome on Android), "Import from contacts" adds picked people and skips repeats; elsewhere a note says how to turn it on in Safari.
+- **Decisions:** people are added, never detected. The list stays on the phone: names, phones and relationships are never sent anywhere. Stored in the existing key-value store, so no database upgrade.
+- **Learned:** the Contact Picker isn't in any iPhone browser by default, so the demo adds people by hand.
+- **Next:** the family vote link, one Space per link.

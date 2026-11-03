@@ -6,7 +6,8 @@ import Inventory from './Inventory.jsx'
 import MoreParts from './MoreParts.jsx'
 import ScanGuide from './ScanGuide.jsx'
 import ItemDetail from './ItemDetail.jsx'
-import { deleteChat, deleteSpace, loadSpaces, saveSpace } from './savedSpaces.js'
+import People from './People.jsx'
+import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
@@ -28,6 +29,7 @@ function withHandItems(result, handItems) {
 export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
+  const [people, setPeople] = useState([]) // the household, added by hand or from contacts
   const [openId, setOpenId] = useState(null)
   const [openItemId, setOpenItemId] = useState(null)
   const [focusItem, setFocusItem] = useState(null) // the item to scroll to after saving it
@@ -51,9 +53,10 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
-    loadSpaces().then(saved => {
+    Promise.all([loadSpaces(), loadPeople()]).then(([saved, household]) => {
       if (cancelled) return
       setSpaces(saved)
+      setPeople(household)
       setScreen(saved.length ? 'spaces' : 'home')
     })
     return () => { cancelled = true }
@@ -306,6 +309,17 @@ export default function App() {
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
           onAsk={() => setScreen('ask-all')}
+          people={people}
+          onPeople={() => setScreen('people')}
+        />
+      )}
+
+      {screen === 'people' && (
+        <People
+          people={people}
+          spaces={spaces.filter(s => s.result)}
+          onChange={next => { setPeople(next); savePeople(next) }}
+          onBack={() => setScreen('spaces')}
         />
       )}
 
@@ -367,6 +381,7 @@ export default function App() {
           onBack={() => setScreen('spaces')}
           onDeclutter={() => setScreen('declutter')}
           declutterLeft={leftToDeclutter[open.id]}
+          usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
