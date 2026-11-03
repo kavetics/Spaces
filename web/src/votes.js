@@ -35,7 +35,8 @@ export function tally(space, results, itemId) {
   const byChoice = {}
   for (const { voterId, answers } of results.votes) {
     const choice = answers[String(itemId)]
-    if (!choice || !names[voterId]) continue
+    // Skipped items have no vote. Old "Unsure" votes, from before it was removed, don't count either.
+    if (!choiceLabel(choice) || !names[voterId]) continue
     ;(byChoice[choice] ??= []).push(names[voterId])
   }
   return Object.entries(byChoice)
