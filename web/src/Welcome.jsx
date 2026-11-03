@@ -6,7 +6,7 @@ import { Heading } from '@astryxdesign/core/Heading'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
-import tunnelArt from './assets/welcome-tunnel.webp'
+import tunnelArt from './assets/welcome-gold.webp'
 import './Welcome.css'
 
 const MIN_LOADING_MS = 1800 // long enough to read as a scan, not a flicker
@@ -35,7 +35,7 @@ export default function Welcome({ loadScanner, onAccept }) {
     return () => { cancelled = true }
   }, [loadScanner])
 
-  // The tunnel art (made with Meta's Muse Image) shows from the start: it's the loading screen while the
+  // The gold line tunnel (made with Meta's Muse Image) shows from the start: it's the loading screen while the
   // scanner loads, and the words come up on its dark floor once it's ready.
   return (
     <VStack className="welcome" hAlign="center" vAlign="end" gap={6} padding={6}>

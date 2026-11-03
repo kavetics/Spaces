@@ -33,3 +33,8 @@
 .scan-pulse-light { fill: var(--color-accent); }
 @keyframes scan-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .scan-pulse-ring { animation: none; opacity: 0.6; } }
+
+/* Things: room between categories and rows, and category headings that sit below the Things heading. */
+.things-list { padding-block-start: var(--spacing-4); }
+.things-category > button[aria-expanded] { padding-block: var(--spacing-2); }
+.things-list li { padding-block: var(--spacing-1); }

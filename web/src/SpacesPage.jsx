@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Button } from '@astryxdesign/core/Button'
+import { Collapsible } from '@astryxdesign/core/Collapsible'
 import { Divider } from '@astryxdesign/core/Divider'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
+import Initials, { peopleLabel } from './Initials.jsx'
 import { progress } from './itemFields.js'
 import { sellingButton, sellingLists } from './Selling.jsx'
 import { countLabel, scannedDay, sortItems } from './spaceItems.js'
@@ -21,16 +24,22 @@ function status(space, failed) {
   return [countLabel(inSpace.length, 'thing'), decluttering, `Scanned ${scannedDay(space.savedAt)}`].filter(Boolean).join(' · ')
 }
 
-function SpaceRow({ space, failed, onOpen }) {
+function SpaceRow({ space, failed, people, onOpen }) {
   return (
     <ListItem
       label={space.spaceName}
       description={status(space, failed)}
       startContent={space.cover ? <img className="inventory-crop" src={space.cover} alt="" /> : <span className="inventory-crop" />}
+      endContent={<Initials people={people.filter(p => p.spaceIds?.includes(space.id))} />}
       onClick={onOpen}
     />
   )
 }
+
+// The Spaces list opens and closes; its state is remembered on this phone.
+const OPEN_KEY = 'spaces-home-open'
+const savedOpen = () => { try { return localStorage.getItem(OPEN_KEY) !== 'closed' } catch { return true } }
+const saveOpen = open => { try { localStorage.setItem(OPEN_KEY, open ? 'open' : 'closed') } catch { /* just not remembered */ } }
 
 const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
 const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
@@ -41,6 +50,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
   const { toSell, toLetGo, sold, gone } = sellingLists(spaces)
   const decided = ready.reduce((n, s) => n + progress(sortItems(s).inSpace).decided, 0)
   const shared = ready.filter(s => s.shared).map(s => s.spaceName)
+  const [spacesOpen, setSpacesOpen] = useState(savedOpen)
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
@@ -48,19 +58,27 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
         <Button label="Scan a Space" size="sm" isDisabled={processing} onClick={onScanAnother} />
       </HStack>
 
-      <VStack gap={1}>
-        <Heading level={2}>Spaces</Heading>
-        <List hasDividers edge="flush">
-          {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} onOpen={() => onOpen(space.id)} />)}
-        </List>
-        {processing && <Text as="p" color="secondary">You can scan another Space when this one finishes.</Text>}
-      </VStack>
+      <Collapsible isOpen={spacesOpen} onOpenChange={open => { setSpacesOpen(open); saveOpen(open) }} trigger={<Heading level={2}>Spaces ({spaces.length})</Heading>}>
+        <VStack gap={1}>
+          <List hasDividers edge="flush">
+            {spaces.map(space => <SpaceRow key={space.id} space={space} failed={failed[space.id]} people={people} onOpen={() => onOpen(space.id)} />)}
+          </List>
+          {processing && <Text as="p" color="secondary">You can scan another Space when this one finishes.</Text>}
+        </VStack>
+      </Collapsible>
 
       <Divider />
       <HStack gap={2} vAlign="center" hAlign="between">
-        <VStack gap={0}>
+        <VStack gap={1}>
           <Heading level={2}>People</Heading>
-          <Text as="p" color="secondary">{people.length ? andList(people.map(p => p.name)) : 'Add who shares your home.'}</Text>
+          {people.length
+            ? (
+              <HStack gap={2} vAlign="center">
+                <Initials people={people} />
+                <Text as="p" color="secondary">{peopleLabel(people.length)} · {andList(people.map(p => p.name))}</Text>
+              </HStack>
+            )
+            : <Text as="p" color="secondary">Add who shares your home.</Text>}
         </VStack>
         <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
       </HStack>

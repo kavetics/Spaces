@@ -19,6 +19,7 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { shrinkPhoto } from './api.js'
 import { byYou, decisionLabel, decisionOf, progress as itemProgress } from './itemFields.js'
+import Initials, { peopleLabel } from './Initials.jsx'
 import ItemForm from './ItemForm.jsx'
 import { CATEGORIES, categoryOf, countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
@@ -291,7 +292,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
             <VStack className="inventory-with-action">
               <Button label="Add" aria-label="Add a thing" size="sm" className="inventory-action" onClick={() => setAddingItem(true)} />
               {section(INVENTORY, `Things (${inSpace.length})`, (
-                <VStack gap={3}>
+                <VStack gap={5} className="things-list">
                   {CATEGORIES.map(([id, label]) => {
                     const inCategory = inSpace.filter(i => categoryOf(i) === id)
                     if (!inCategory.length) return null
@@ -299,7 +300,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
                     const unsure = inCategory.filter(i => i.needsReview)
                     return section(id, `${label} (${inCategory.length})`, (
                       <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
-                    ), 3)
+                    ), 3, 'things-category')
                   })}
                 </VStack>
               ), 2, 'inventory-action-trigger')}
@@ -337,7 +338,14 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           <Heading level={2}>People</Heading>
           <Button label={usedBy?.length ? 'Edit' : 'Add'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} size="sm" onClick={onPeople} />
         </HStack>
-        <Text as="p" color="secondary">{usedBy?.length ? `${andList(usedBy)} ${usedBy.length > 1 ? 'use' : 'uses'} this Space` : 'Add who shares this Space.'}</Text>
+        {usedBy?.length
+          ? (
+            <HStack gap={2} vAlign="center">
+              <Initials people={usedBy} />
+              <Text as="p" color="secondary">{peopleLabel(usedBy.length)} · {andList(usedBy.map(p => p.name))}</Text>
+            </HStack>
+          )
+          : <Text as="p" color="secondary">Add who shares this Space.</Text>}
       </VStack>
 
       {inSpace.length > 0 && (
@@ -376,9 +384,9 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
             />
           )
           : (
-            <VStack gap={2} hAlign="start">
+            <VStack gap={2}>
               <Text as="p" color="secondary">Ask about your things, people and decisions.</Text>
-              <Button label="Ask Muse" size="sm" onClick={onAsk} />
+              <Button label="Ask Muse" size="lg" width="100%" onClick={onAsk} />
             </VStack>
           )}
         {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}

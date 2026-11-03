@@ -1,4 +1,4 @@
-/* The welcome screen: a tunnel toward a warm light (art made with Muse Image). Astryx has no
+/* The welcome screen: a tunnel of gold lines toward a warm light (art made with Muse Image). Astryx has no
    animation or image-layering for this, so the layers and keyframes live here, using its tokens. */
 .welcome {
   position: fixed;
@@ -19,7 +19,7 @@
   object-position: center 28%;
   transform-origin: 70% 24%;
   animation:
-    welcome-fade var(--duration-slow-max) var(--ease-standard) both,
+    welcome-fade 1000ms var(--ease-standard) both,
     welcome-drift 24s ease-in-out infinite alternate;
 }
 
@@ -45,23 +45,29 @@
   z-index: 1;
   pointer-events: none;
   background: radial-gradient(ellipse 34% 20% at 70% 24%, color-mix(in srgb, var(--color-accent) 40%, transparent), transparent 72%);
-  animation: welcome-breathe 6s ease-in-out infinite;
+  animation: welcome-fade 1000ms var(--ease-standard) both, welcome-breathe 6s ease-in-out 1000ms infinite;
 }
 
 .welcome-name { letter-spacing: 0.3em; padding-inline-start: 0.3em; }
 .welcome-credit { opacity: 0.7; }
-.welcome-title { animation: welcome-rise var(--duration-slow) var(--ease-standard) both; }
+.welcome-title { animation: welcome-rise 800ms var(--ease-standard) 600ms both; }
 .welcome-button { animation: welcome-pop var(--duration-medium) var(--ease-standard) both; }
 
 @keyframes welcome-fade { from { opacity: 0; } }
-@keyframes welcome-rise { from { opacity: 0; transform: translateY(var(--spacing-3)); } }
+@keyframes welcome-rise { from { opacity: 0; transform: translateY(var(--spacing-6)); } }
 @keyframes welcome-pop { from { opacity: 0; transform: scale(0.9); } }
 @keyframes welcome-drift { to { transform: scale(1.06); } }
 @keyframes welcome-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 
 /* Near zero, not none: the button waits for the title's animation to end. */
 @media (prefers-reduced-motion: reduce) {
-  .welcome-title, .welcome-button { animation-duration: 0.01ms; }
+  .welcome-title, .welcome-button { animation-duration: 0.01ms; animation-delay: 0ms; }
   .welcome > .welcome-art { animation: welcome-fade 0.01ms both; }
   .welcome::after { animation: none; }
 }
+
+/* The short opening on each load: it sits over the app, then fades away. */
+.welcome.splash { z-index: 10; transition: opacity 400ms var(--ease-standard); }
+.welcome.splash-leaving { opacity: 0; pointer-events: none; }
+.splash-name { margin-block-end: 18vh; }
+

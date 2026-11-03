@@ -9,6 +9,7 @@ import ItemDetail from './ItemDetail.jsx'
 import People from './People.jsx'
 import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
+import Splash, { wantsSplash } from './Splash.jsx'
 import Selling from './Selling.jsx'
 import SpacesPage from './SpacesPage.jsx'
 import VoteSetup, { VoteCard } from './VoteSetup.jsx'
@@ -35,6 +36,7 @@ function withHandItems(result, handItems) {
 export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [spaces, setSpaces] = useState([])
+  const [splash, setSplash] = useState(wantsSplash) // the short opening, on each load that has Spaces
   const [people, setPeople] = useState([]) // the household, added by hand or from contacts
   const [backTo, setBackTo] = useState('spaces') // where People and Ask Muse go back to
   const [voteSetup, setVoteSetup] = useState(null) // making a vote link: { preselect: item ids or null for all, from: screen }
@@ -68,6 +70,7 @@ export default function App() {
       setSpaces(saved)
       setPeople(household)
       setScreen(saved.length ? 'spaces' : 'home')
+      if (!saved.length) setSplash(false) // first time: the welcome screen is the opening
     })
     return () => { cancelled = true }
   }, [])
@@ -376,6 +379,7 @@ export default function App() {
 
   return (
     <>
+      {splash && screen && <Splash onDone={() => setSplash(false)} />}
       <input ref={fileInput} type="file" accept="image/*" hidden onChange={onPhotoFile} />
 
       {screen === 'home' && <Welcome loadScanner={loadScanner} onAccept={() => setScreen('pick')} />}
@@ -464,7 +468,7 @@ export default function App() {
           onPeople={() => { setBackTo('space'); setScreen('people') }}
           onAsk={() => { setBackTo('space'); setScreen('ask-all') }}
           declutterLeft={leftToDeclutter[open.id]}
-          usedBy={people.filter(p => p.spaceIds?.includes(open.id)).map(p => p.name)}
+          usedBy={people.filter(p => p.spaceIds?.includes(open.id))}
           voteCard={<VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} />}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
