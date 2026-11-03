@@ -103,9 +103,16 @@ function ListingOffer({ action, spaces, onDraft }) {
   )
 }
 
-/** Chat about one Space, or all of them when space is null. Only ever knows about its own scope. */
-export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
-  const scope = space ? space.spaceName : 'All Spaces'
+const names = list => (list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}` : list[0] ?? '')
+
+/**
+ * Chat about one Space, or, when space is null, every Space shared with Muse. Only ever knows about its own
+ * scope; notShared are listed so a person can go and share one.
+ */
+export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenSpace, onDraftListing }) {
+  const scope = space ? space.spaceName : names(spaces.map(s => s.spaceName))
+  const heading = space || spaces.length <= 2 ? scope || 'No Spaces shared' : `${spaces.length} Spaces`
+  const nothingShared = !space && spaces.length === 0
   const chatKey = space ? space.id : 'all'
   const inScope = space ? [space] : spaces
   const [messages, setMessages] = useState([])
@@ -158,18 +165,25 @@ export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
   }
 
   return (
-    <section className="ask-muse" aria-label={`Ask Muse about ${scope}`}>
+    <section className="ask-muse" aria-label={`Ask Muse about ${heading}`}>
       <HStack gap={3} vAlign="center" padding={3} className="ask-muse-header">
         <IconButton label="Back" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
         <VStack className="ask-muse-title">
           <Heading level={1}>Ask Muse</Heading>
-          <Text type="supporting">{scope}</Text>
+          <Text type="supporting">{heading}</Text>
         </VStack>
         {messages.length > 0 && <Button label="Clear" variant="ghost" onClick={clear} />}
       </HStack>
 
       <VStack gap={3} padding={4} className="ask-muse-messages" aria-live="polite">
-        {messages.length === 0 && (
+        {nothingShared && (
+          <VStack gap={2} padding={4} className="ask-muse-offer">
+            <Heading level={2}>Share a Space to ask about it</Heading>
+            <Text as="p" color="secondary">Muse only sees the Spaces you share. Open one and turn on Share with Muse.</Text>
+            {notShared.map(s => <Button key={s.id} label={s.spaceName} width="100%" onClick={() => onOpenSpace(s.id)} />)}
+          </VStack>
+        )}
+        {messages.length === 0 && !nothingShared && (
           <VStack gap={2}>
             <Text as="p" color="secondary">Muse answers from what you've scanned, and shows where it saw each item.</Text>
             {STARTERS[space ? 'one' : 'all'].map(s => <Button key={s} label={s} onClick={() => send(s)} />)}
@@ -194,8 +208,8 @@ export default function AskMuse({ spaces, space, onBack, onDraftListing }) {
       </VStack>
 
       <form className="ask-muse-input" onSubmit={e => { e.preventDefault(); send(draft) }}>
-        <TextInput label="Your question" isLabelHidden placeholder="Ask about your things" value={draft} onChange={setDraft} />
-        <Button label="Send" type="submit" variant="primary" isDisabled={!draft.trim() || waiting} />
+        <TextInput label="Your question" isLabelHidden placeholder={nothingShared ? 'Share a Space first' : 'Ask about your things'} isDisabled={nothingShared} value={draft} onChange={setDraft} />
+        <Button label="Send" type="submit" variant="primary" isDisabled={nothingShared || !draft.trim() || waiting} />
       </form>
 
       {cited && <Citation cited={cited} onClose={() => setCited(null)} />}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Heading } from '@astryxdesign/core/Heading'
+import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import tunnelArt from './assets/welcome-gold.webp'
 import './Welcome.css'
@@ -9,7 +10,7 @@ import './Welcome.css'
 const SHOW_MS = 2000
 const FADE_MS = 400
 
-/** On every load with Spaces saved: the tunnel and the name, then a fade into the app. Tap to skip. The art is made with Muse Image. */
+/** On every load with Spaces saved: the tunnel, the name and a line under it, then a fade into the app. Tap to skip. The art is made with Muse Image. */
 export default function Splash({ onDone }) {
   const [leaving, setLeaving] = useState(false)
   useEffect(() => {
@@ -22,7 +23,10 @@ export default function Splash({ onDone }) {
   return (
     <VStack className={`welcome splash${leaving ? ' splash-leaving' : ''}`} hAlign="center" vAlign="end" padding={6} onClick={onDone} aria-hidden="true">
       <img className="welcome-art" src={tunnelArt} alt="" />
-      <Heading level={2} type="display-1" justify="center" className="welcome-name welcome-title splash-name">SPACES</Heading>
+      <VStack gap={3} hAlign="center" className="welcome-title splash-words">
+        <Heading level={2} type="display-1" justify="center" className="welcome-name splash-name">SPACES</Heading>
+        <Text as="p" color="secondary" justify="center">Spaces, Things, People, and Decisions, ready for Muse</Text>
+      </VStack>
     </VStack>
   )
 }

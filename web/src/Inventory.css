@@ -43,3 +43,13 @@
 
 /* Remove on each Thing: grey, so it doesn't read louder than the Thing's name. */
 .quiet-action { color: var(--color-text-secondary); }
+
+/* Dropdown headings paint no press highlight. On an iPhone it lingered after a tap as a thin band that ran under
+   the Add button beside Things; the turning chevron is feedback enough. */
+button.astryx-collapsible-trigger.astryx-collapsible-trigger { background-color: transparent; background-image: none; }
+
+/* A Space shared with Muse says so on its row, in the main color. */
+.shared-label { color: var(--color-text-accent); }
+
+/* Let go matches the Delete button's red. */
+.let-go-tag { background-color: var(--color-error-muted); color: var(--color-text-error); }

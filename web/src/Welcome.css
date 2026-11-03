@@ -69,5 +69,6 @@
 /* The short opening on each load: it sits over the app, then fades away. */
 .welcome.splash { z-index: 10; transition: opacity 400ms var(--ease-standard); }
 .welcome.splash-leaving { opacity: 0; pointer-events: none; }
-.splash-name { margin-block-end: 18vh; }
-
+/* On the opening the name is bigger than on the welcome screen, with one line under it, low on the tunnel's floor. */
+.splash-words { max-width: 22rem; margin-block-end: 18vh; }
+.splash-name { font-size: calc(var(--text-display-1-size) * 1.25); }

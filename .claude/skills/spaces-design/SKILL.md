@@ -81,7 +81,7 @@ These came from real feedback; each one fixed something that confused the owner.
 1. **Restate the problem in the owner's words**, and name which part of the model it touches.
 2. **Look at what's there first.** `scripts/screens.mjs` captures the main screens at 390 x 844
    with a faked scan (no AI cost): welcome, Space picker, scan guide, Space, item, Sell form,
-   Declutter card, Your Spaces, People and For sale. Run it against the local build
+   Declutter card, My home, People and For sale. Run it against the local build
    (`node screens.mjs http://localhost:8788 <folder> <photo>`; it needs `puppeteer-core` installed
    where you run it) and read the shots as each user above would. For a screen it doesn't reach,
    copy its pattern.

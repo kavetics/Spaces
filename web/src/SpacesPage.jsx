@@ -28,7 +28,9 @@ function SpaceRow({ space, failed, people, onOpen }) {
   return (
     <ListItem
       label={space.spaceName}
-      description={status(space, failed)}
+      description={space.shared
+        ? <VStack gap={1}><Text type="supporting">{status(space, failed)}</Text><Text type="supporting" className="shared-label">Shared with Muse</Text></VStack>
+        : status(space, failed)}
       startContent={space.cover ? <img className="inventory-crop" src={space.cover} alt="" /> : <span className="inventory-crop" />}
       endContent={<Initials people={people.filter(p => p.spaceIds?.includes(space.id))} />}
       onClick={onOpen}
@@ -41,7 +43,6 @@ const OPEN_KEY = 'spaces-home-open'
 const savedOpen = () => { try { return localStorage.getItem(OPEN_KEY) !== 'closed' } catch { return true } }
 const saveOpen = open => { try { localStorage.setItem(OPEN_KEY, open ? 'open' : 'closed') } catch { /* just not remembered */ } }
 
-const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
 const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
 
 /** The home: its Spaces, the People who share them, the Decisions made so far, and Muse, which uses all three. */
@@ -54,7 +55,7 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
-        <Heading level={1}>Your home</Heading>
+        <Heading level={1}>My home</Heading>
         <Button label="Scan a Space" isDisabled={processing} onClick={onScanAnother} />
       </HStack>
 
@@ -68,10 +69,13 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
       </Collapsible>
 
       <Divider />
-      <HStack gap={2} vAlign="center" hAlign="between">
-        <VStack gap={1}>
+      {/* Each section's button sits level with its heading, as on a Space. */}
+      <VStack gap={1}>
+        <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={2}>People</Heading>
-          {people.length
+          <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} onClick={onPeople} />
+        </HStack>
+        {people.length
             ? (
               <HStack gap={2} vAlign="center">
                 <Initials people={people} />
@@ -79,22 +83,20 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
               </HStack>
             )
             : <Text as="p" color="secondary">Add who shares your home.</Text>}
-        </VStack>
-        <Button label={people.length ? 'Edit' : 'Add'} aria-label={people.length ? 'Edit people' : 'Add people'} onClick={onPeople} />
-      </HStack>
+      </VStack>
 
       <Divider />
-      <HStack gap={2} vAlign="center" hAlign="between">
-        <VStack gap={0}>
+      <VStack gap={1}>
+        <HStack gap={2} vAlign="center" hAlign="between">
           <Heading level={2}>Decisions</Heading>
-          <Text as="p" color="secondary">
-            {toSell.length || toLetGo.length || sold.length || gone.length
-              ? [toSell.length && `${toSell.length} for sale`, toLetGo.length && `${toLetGo.length} to let go`, sold.length && `${sold.length} sold`, gone.length && `${gone.length} gone`].filter(Boolean).join(' · ')
-              : decided ? `${decided} decided, all kept` : 'Open a Space to declutter it.'}
-          </Text>
-        </VStack>
-        {sellingButton(spaces) && <Button label="See list" aria-label="For sale and letting go" onClick={onSelling} />}
-      </HStack>
+          {sellingButton(spaces) && <Button label="See list" aria-label="For sale and letting go" onClick={onSelling} />}
+        </HStack>
+        <Text as="p" color="secondary">
+          {toSell.length || toLetGo.length || sold.length || gone.length
+            ? [toSell.length && `${toSell.length} for sale`, toLetGo.length && `${toLetGo.length} to let go`, sold.length && `${sold.length} sold`, gone.length && `${gone.length} gone`].filter(Boolean).join(' · ')
+            : decided ? `${decided} decided, all kept` : 'Open a Space to declutter it.'}
+        </Text>
+      </VStack>
 
       {ready.length > 0 && (
         <>
@@ -102,9 +104,9 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
           <VStack gap={2}>
             <Heading level={2}>Muse</Heading>
             <Text as="p" color="secondary">
-              {SHOW_SHARING
-                ? (shared.length ? `Muse in the Meta AI app can see: ${andList(shared)}.` : 'Turn on Muse in a Space to let the Meta AI app use it.')
-                : 'Ask about your things, people and decisions, across every Space.'}
+              {shared.length
+                ? `Muse can see: ${andList(shared)}.${shared.length < ready.length ? ' Share more from each Space.' : ''}`
+                : 'Muse only sees Spaces you share. Open a Space and turn on Share with Muse.'}
             </Text>
             <Button label="Ask Muse" variant="primary" onClick={onAsk} />
           </VStack>

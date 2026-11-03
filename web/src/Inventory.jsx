@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertDialog } from '@astryxdesign/core/AlertDialog'
+import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Collapsible } from '@astryxdesign/core/Collapsible'
@@ -25,15 +26,15 @@ import ScanPulse from './ScanPulse.jsx'
 import { CATEGORIES, categoryOf, countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
-// Sharing with the Muse app works for one household, the owner's, so it's hidden unless a build turns it on.
-// Everything else in the app works for anyone without it.
+// Sending shared Spaces to Muse in the Meta AI app works for one household, the owner's, so entering the owner
+// key is offered only in builds that turn it on. Share with Muse itself (for Ask Muse) works for anyone.
 const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
 const NEARBY = 'nearby'
 const INVENTORY = 'inventory'
 const STARTS_CLOSED = [NEARBY, INVENTORY]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling, onPeople, onAsk }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling, onPeople, onOwnerKey }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -44,6 +45,8 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   const [askKey, setAskKey] = useState(false)
   const [typedKey, setTypedKey] = useState('')
   const [sharing, setSharing] = useState(false)
+  const [askShare, setAskShare] = useState(false) // confirming Share with Muse
+  const inSpaceCount = result ? sortItems(space).inSpace.length : 0
   const [shareProblem, setShareProblem] = useState(null)
 
   // After saving an item, bring it into view in the list.
@@ -59,7 +62,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   }, [focusItem])
 
 
-  const backButton = <IconButton label="Your home" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
+  const backButton = <IconButton label="My home" icon={<Icon icon="chevronLeft" />} onClick={onBack} />
   const dialogs = (
     <>
       <AlertDialog
@@ -102,6 +105,13 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
                   <Text as="p" color="secondary">Replaces the scanned things. Things you added by hand stay.</Text>
                   <Button label="Start over" isDisabled={Boolean(space.addFrames)} onClick={() => { setShowMore(false); setAskRescan(true) }} />
                 </VStack>
+                {SHOW_SHARING && !hasOwnerKey && (
+                  <VStack gap={2}>
+                    <Heading level={3}>Meta AI app</Heading>
+                    <Text as="p" color="secondary">For the owner's household only: lets Muse in the Meta AI app read the Spaces you share.</Text>
+                    <Button label="Enter owner key" onClick={() => { setShowMore(false); setAskKey(true) }} />
+                  </VStack>
+                )}
                 <Divider />
                 <Button label="Delete Space" variant="destructive" onClick={() => { setShowMore(false); setAskDelete(true) }} />
               </VStack>
@@ -115,9 +125,35 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
           content={
             <LayoutContent>
               <VStack gap={3}>
-                <Text as="p">Only someone with this key can share Spaces from this app. You only need to enter it once on this phone.</Text>
+                <Text as="p">With this key, the Spaces you share with Muse also go to the Spaces server, where Muse in the Meta AI app can read them. You only need to enter it once on this phone.</Text>
                 <TextInput label="Owner key" type="password" value={typedKey} onChange={setTypedKey} />
-                <Button label="Share" variant="primary" isDisabled={!typedKey.trim() || sharing} onClick={() => toggleShare(true, typedKey.trim())} />
+                {shareProblem && askKey && <Text as="p" role="alert" color="secondary">{shareProblem}</Text>}
+                <Button label="Connect" variant="primary" isDisabled={!typedKey.trim() || sharing} onClick={() => connect(typedKey.trim())} />
+              </VStack>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+      {/* Turning sharing on says plainly what leaves the phone before anything does. */}
+      <Dialog isOpen={askShare} onOpenChange={setAskShare} width={420}>
+        <Layout
+          header={<DialogHeader title={`Share ${spaceName} with Muse?`} onOpenChange={setAskShare} />}
+          content={
+            <LayoutContent>
+              <VStack gap={3}>
+                <Banner
+                  status="info"
+                  title="This sends your data off this phone"
+                  description={hasOwnerKey ? "To Meta's AI and to the Spaces server. You can turn it off any time." : "To Meta's AI, each time you ask Muse something. You can turn it off any time."}
+                />
+                <List edge="flush">
+                  <ListItem label={<Text as="p">Ask Muse on My home can use its {countLabel(inSpaceCount, 'thing')}, who uses it and your decisions.</Text>} />
+                  {hasOwnerKey && <ListItem label={<Text as="p">Muse in the Meta AI app can read the same list, saved on the Spaces server.</Text>} />}
+                  {hasOwnerKey && <ListItem label={<Text as="p">Things marked Sell also send up to 3 sale photos and their listing draft.</Text>} />}
+                  <ListItem label={<Text as="p">Room photos stay on this phone.</Text>} />
+                </List>
+                <Button label="Share with Muse" variant="primary" isDisabled={sharing} isLoading={sharing} onClick={() => toggleShare(true)} />
+                <Button label="Not now" variant="ghost" onClick={() => setAskShare(false)} />
               </VStack>
             </LayoutContent>
           }
@@ -126,17 +162,29 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
     </>
   )
 
-  async function toggleShare(on, key) {
-    if (on && !key && !hasOwnerKey) { setAskKey(true); return }
+  async function toggleShare(on) {
     setSharing(true)
     setShareProblem(null)
     try {
-      await onShare(on, key)
+      await onShare(on)
+      setAskShare(false)
+    } catch (err) {
+      setAskShare(false)
+      setShareProblem(err.message)
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function connect(key) {
+    setSharing(true)
+    setShareProblem(null)
+    try {
+      await onOwnerKey(key)
       setAskKey(false)
       setTypedKey('')
     } catch (err) {
-      if (err.wrongKey) setAskKey(true)
-      setShareProblem(err.message)
+      setShareProblem(err.wrongKey ? 'That owner key is wrong.' : err.message)
     } finally {
       setSharing(false)
     }
@@ -199,7 +247,12 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       onClick={actionsBelow ? undefined : () => onOpenItem(item.id)}
       description={(
         <VStack gap={1}>
-          {decisionLabel(item.status) && <Text as="p" type="label">{statusLine(item)}</Text>}
+          {decisionLabel(item.status) && (
+            <HStack gap={2} vAlign="center">
+              <Badge label={price(item) ? `${decisionLabel(item.status)} · $${price(item).amount}` : decisionLabel(item.status)} variant={DECISION_COLORS[decisionOf(item.status)]} className={decisionOf(item.status) === 'donate' ? 'let-go-tag' : undefined} />
+              {price(item) && <Text type="supporting" color="secondary">{price(item).source}</Text>}
+            </HStack>
+          )}
           {byYou(item) && <Text as="p" type="supporting">{byYou(item)}</Text>}
           {item.description && <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>}
           {actionsBelow}
@@ -374,22 +427,15 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
       {/* Muse */}
       <VStack gap={2}>
         <Heading level={2}>Muse</Heading>
-        {SHOW_SHARING
-          ? (
-            <Switch
-              label="Muse can use this Space"
-              description="Sends its things' names and details to your Spaces server, for Muse in the Meta AI app. Things marked Sell also send up to 3 small sale photos and their listing draft, so Muse can list them on Marketplace. Room photos stay on this phone."
-              value={Boolean(space.shared)}
-              isDisabled={sharing}
-              onChange={on => toggleShare(on)}
-            />
-          )
-          : (
-            <VStack gap={2}>
-              <Text as="p" color="secondary">Ask about your things, people and decisions.</Text>
-              <Button label="Ask Muse" width="100%" onClick={onAsk} />
-            </VStack>
-          )}
+        <Switch
+          label="Share with Muse"
+          description={space.shared
+            ? `On. Muse can see this Space's ${countLabel(inSpace.length, 'thing')}.`
+            : "Off. Muse can't see this Space."}
+          value={Boolean(space.shared)}
+          isDisabled={sharing}
+          onChange={on => (on ? setAskShare(true) : toggleShare(false))}
+        />
         {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
       </VStack>
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
@@ -405,10 +451,16 @@ function progressText(progress, photos) {
   return photos === 1 ? 'Looking through your photo…' : 'Looking through your photos…'
 }
 
-function statusLine(item) {
-  const value = item.details?.askingPrice ?? item.details?.estimatedValue?.amount
-  const priced = item.status === 'sell' && value ? ` · $${value}${item.details?.askingPrice ? '' : ' AI estimate'}` : ''
-  return `${decisionLabel(item.status)}${priced}`
+// Each decision gets its own tag, so it stands apart from the item's name. Keep is grey: nothing left to do.
+// Let go is red like Delete; Sell is gold and carries its price.
+const DECISION_COLORS = { keep: 'neutral', sell: 'yellow', donate: 'red' }
+
+// A Sell item's price: the asking price once the person sets one, otherwise Muse's estimate, labelled as such.
+function price(item) {
+  if (item.status !== 'sell') return null
+  if (item.details?.askingPrice) return { amount: item.details.askingPrice, source: 'Asking price' }
+  const estimate = item.details?.estimatedValue?.amount
+  return estimate ? { amount: estimate, source: 'AI estimate' } : null
 }
 
 const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])

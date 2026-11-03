@@ -53,9 +53,9 @@ try {
   await p.evaluate(() => { const g = document.querySelector('[role=radiogroup][aria-label=Decision]'); [...g.querySelectorAll('[role=radio], button, input')].find(x => (x.innerText || x.closest('label')?.innerText || '').trim() === 'Sell')?.click() })
   await until('Photos for selling'); await shot('06-item-sell')
   await tapLabel('Living room'); await until('Declutter this Space'); await click('Declutter this Space'); await until(' of '); await shot('07-declutter-card')
-  await tapLabel('Stop decluttering'); await until('Things ('); await tapLabel('Your home'); await until('Your home'); await shot('08-home')
+  await tapLabel('Stop decluttering'); await until('Things ('); await tapLabel('My home'); await until('My home'); await shot('08-home')
   await tapLabel('Add people'); await until('The people you live with'); await shot('09-people')
-  await tapLabel('Back'); await until('Your home')
+  await tapLabel('Back'); await until('My home')
   await tapLabel('For sale and letting go'); await until('To sell'); await shot('10-for-sale')
 } catch (err) {
   console.log('STOPPED', err.message); await p.screenshot({ path: `${OUT}/stopped.png`, fullPage: true })

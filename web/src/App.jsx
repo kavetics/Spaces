@@ -15,7 +15,7 @@ import SpacesPage from './SpacesPage.jsx'
 import VoteSetup, { VoteCard } from './VoteSetup.jsx'
 import VoteReview from './VoteReview.jsx'
 import { resultsFor, tally, tallyLine, topPick } from './votes.js'
-import { getOwnerKey, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
+import { getOwnerKey, listShared, setOwnerKey, shareSpace, sharePayload, unshareSpace } from './sharing.js'
 import { makePictures, needsPictures } from './crop.js'
 import { categoryOf, sortItems } from './spaceItems.js'
 import { askMotionPermission } from './sweep.js'
@@ -56,6 +56,7 @@ export default function App() {
   const running = useRef(null) // only one Space is recognized at a time, since each run costs money
   const picturing = useRef(null) // pictures are made for one Space at a time, to keep memory low
   const synced = useRef({}) // id → the item list the server last got, so unchanged Spaces aren't sent again
+  const [ownerKey, setOwnerKeyState] = useState(getOwnerKey) // only the owner's phone sends shared Spaces to the Meta AI app
   const [shareErrors, setShareErrors] = useState({}) // id → why keeping a shared Space up to date failed
   const fileInput = useRef(null)
 
@@ -166,7 +167,7 @@ export default function App() {
   // A shared Space follows its changes: removed items, added nearby ones, a finished rescan.
   // Waits a moment so quick edits go as one update.
   useEffect(() => {
-    const key = getOwnerKey()
+    const key = ownerKey
     const stale = spaces.filter(s => s.shared && s.result && synced.current[s.id] !== JSON.stringify(sharePayload(s)))
     if (!key || !stale.length) return
     const timer = setTimeout(() => stale.forEach(space => {
@@ -176,21 +177,28 @@ export default function App() {
         .catch(err => setShareErrors(e => ({ ...e, [space.id]: err.message })))
     }), 800)
     return () => clearTimeout(timer)
-  }, [spaces])
+  }, [spaces, ownerKey])
 
-  // Turning sharing on sends the list right away, so a wrong key or a server problem shows up here.
-  async function setSharing(space, on, typedKey) {
-    const key = typedKey ?? getOwnerKey()
-    if (on) {
-      await shareSpace(space, key)
+  // Share with Muse puts a Space in Ask Muse's context. On the owner's phone it also goes to the Spaces server
+  // for Muse in the Meta AI app, right away, so a server problem shows up here and the switch stays as it was.
+  async function setSharing(space, on) {
+    if (ownerKey && on) {
+      await shareSpace(space, ownerKey)
       synced.current[space.id] = JSON.stringify(sharePayload(space))
-    } else {
-      await unshareSpace(space.id, key)
+    } else if (ownerKey) {
+      await unshareSpace(space.id, ownerKey)
       delete synced.current[space.id]
     }
-    if (typedKey) setOwnerKey(typedKey)
     setShareErrors(({ [space.id]: _, ...rest }) => rest)
     change(space.id, s => ({ ...s, shared: on }))
+  }
+
+  // The owner key connects this phone to the Meta AI app. Checked with the server before it's kept;
+  // shared Spaces are then sent by the effect above.
+  async function connectOwner(key) {
+    await listShared(key)
+    setOwnerKey(key)
+    setOwnerKeyState(key)
   }
 
   function onPhotoFile(event) {
@@ -360,7 +368,7 @@ export default function App() {
 
   // A shared Space comes off the server first, so deleting it here can't leave its items with Muse.
   async function onDelete() {
-    if (open.shared) await unshareSpace(open.id, getOwnerKey())
+    if (open.shared && ownerKey) await unshareSpace(open.id, ownerKey)
     await deleteSpace(open.id)
     deleteChat(open.id)
     forgetDeclutter(open.id)
@@ -466,7 +474,6 @@ export default function App() {
           onDeclutter={() => setScreen('declutter')}
           onSelling={() => openSelling(open.id, 'space')}
           onPeople={() => { setBackTo('space'); setScreen('people') }}
-          onAsk={() => { setBackTo('space'); setScreen('ask-all') }}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id))}
           voteCard={<VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} />}
@@ -474,8 +481,9 @@ export default function App() {
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
           shareError={shareErrors[open.id]}
-          hasOwnerKey={Boolean(getOwnerKey())}
-          onShare={(on, typedKey) => setSharing(open, on, typedKey)}
+          hasOwnerKey={Boolean(ownerKey)}
+          onShare={on => setSharing(open, on)}
+          onOwnerKey={connectOwner}
         />
       )}
 
@@ -556,7 +564,16 @@ export default function App() {
         />
       )}
 
-      {screen === 'ask-all' && <AskMuse spaces={spaces} space={null} onBack={() => setScreen(backTo)} onDraftListing={draftFromChat} />}
+      {screen === 'ask-all' && (
+        <AskMuse
+          spaces={spaces.filter(s => s.shared && s.result)}
+          notShared={spaces.filter(s => !s.shared && s.result)}
+          space={null}
+          onBack={() => setScreen(backTo)}
+          onOpenSpace={id => { setOpenId(id); setScreen('space') }}
+          onDraftListing={draftFromChat}
+        />
+      )}
     </>
   )
 }

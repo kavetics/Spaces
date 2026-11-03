@@ -51,7 +51,7 @@ export default function PersonForm({ person, spaces, onSave, onRemove, onClose }
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="+1 512 555 0101"
-                  description={number ? `For WhatsApp: ${showPhone(number)}` : 'With the country code, for sending votes on WhatsApp. US numbers can skip +1.'}
+                  description={number ? `✓ Ready for WhatsApp: ${showPhone(number)}` : 'Include the country code. US numbers can skip +1.'}
                   status={triedSave && number === null ? { type: 'error', message: 'Enter the full number with its country code, like +1 512 555 0101 or +91 98765 43210.' } : undefined}
                   isOptional
                   value={phone}
