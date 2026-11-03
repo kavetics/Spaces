@@ -9,6 +9,7 @@ import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { draftListing } from './api.js'
 import { editDetail, listingFields, listingText } from './itemFields.js'
+import { shareItem, useSharePhoto } from './share.js'
 
 const MAX_TITLE = 80
 
@@ -23,6 +24,7 @@ export default function ListingDraft({ item, onChange, autoDraft }) {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(null)
   const section = useRef(null)
+  const photo = useSharePhoto(item)
   const started = useRef(false)
 
   async function makeDraft() {
@@ -54,6 +56,17 @@ export default function ListingDraft({ item, onChange, autoDraft }) {
 
   const edit = (key, value) => onChange({ listingDraft: { ...draft, [key]: value } })
 
+  // The text is copied first too: some apps keep only the photo from a share, so it can be pasted.
+  // Both start right away, inside the tap, which iPhones require for each.
+  async function share() {
+    const text = listingText(draft, details.askingPrice)
+    const copying = navigator.clipboard?.writeText(text).then(() => true, () => false) ?? Promise.resolve(false)
+    const how = await shareItem(photo, text)
+    const copiedToo = await copying
+    if (how === 'cancelled') return
+    setCopied(`${how === 'whatsapp' ? 'Opened WhatsApp.' : 'Shared.'}${copiedToo ? ' The text is also copied, to paste into Marketplace.' : ''} Mark it Listed above once it's posted.`)
+  }
+
   async function copy() {
     try {
       await navigator.clipboard.writeText(listingText(draft, details.askingPrice))
@@ -83,7 +96,8 @@ export default function ListingDraft({ item, onChange, autoDraft }) {
         </>
       )}
       <HStack gap={2}>
-        {draft && <Button label="Copy listing" variant="primary" onClick={copy} />}
+        {draft && <Button label="Share listing" variant="primary" onClick={share} />}
+        {draft && <Button label="Copy" onClick={copy} />}
         <Button label={draft ? 'Draft again' : 'Draft a listing with Muse'} variant={draft ? 'secondary' : 'primary'} isLoading={drafting} onClick={makeDraft} />
       </HStack>
       {copied && <Text as="p" role="status">{copied}</Text>}

@@ -338,3 +338,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Decisions:** a rescan keeps hand-added items but replaces edits to scanned ones, and the dialog says so. Listings use only listing-safe fields, picked on the phone and again on the server, so private details never reach the model. Muse's action is checked like a citation: only a known kind, on an item really in the inventory.
 - **Learned:** a draft takes about 4 s and an answer with a card about 2 s. Spark mentioned listed defects and stayed modest on price.
 - **Next:** iPhone check, README, accuracy numbers, Meta feedback report, video.
+
+## 2026-11-02: Share to WhatsApp and Marketplace
+- **Done:** "Ask family" on an item sends its photo and "Keep, sell or let go?" through the phone's share sheet (WhatsApp, Messages). "Share listing" sends the drafted listing with its photo and also copies the text for Marketplace. Without a share sheet, WhatsApp opens with the text filled in. Renamed "Fitness & hobbies" to "Hobbies & gear".
+- **Decisions:** no WhatsApp Cloud API or Marketplace API: Marketplace has no public listing API, and the Cloud API needs business approval and templates. Votes come back as WhatsApp replies for now; a vote link needs items on a server, so it stays on the roadmap. Spaces is upstream of Marketplace: it finds what to sell and hands it off, rather than competing with Meta's own listing tools.
+- **Learned:** iPhones only open the share sheet straight after a tap, so the photo is prepared when the page opens.
+- **Next:** iPhone check of sharing, README, accuracy numbers, Meta feedback report, video.

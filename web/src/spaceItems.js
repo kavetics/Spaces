@@ -27,7 +27,7 @@ export const CATEGORIES = [
   ['decor', 'Decor'],
   ['plants', 'Plants'],
   ['kitchen', 'Kitchen'],
-  ['fitness_hobbies', 'Fitness & hobbies'],
+  ['fitness_hobbies', 'Hobbies & gear'], // the id stays, so saved scans keep their items here
   ['other', 'Other'],
 ]
 // Scans saved before the list was shortened used these names.
