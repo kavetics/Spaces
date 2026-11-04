@@ -14,12 +14,13 @@ import { deleteChat, loadChat, saveChat } from './savedSpaces.js'
 import { buildGraph, findCited } from './spaceGraph.js'
 import ScanPulse from './ScanPulse.jsx'
 import { scannedAt } from './spaceItems.js'
+import { isoDay } from './tasks.js'
 import './AskMuse.css'
 import './Inventory.css'
 
 const STARTERS = {
   one: ["What's most valuable here?", 'What could I sell?', 'What could I donate?'],
-  all: ['Do I own any duplicates?', 'What could I sell before moving?', 'Which Space has the most stuff?'],
+  all: ['Do I own any duplicates?', 'What could I sell before moving?', "What's due this week?"],
 }
 
 // Turns "Your [[i3]] is here" into text and citations, and fixes each citation to its item for later.
@@ -109,7 +110,8 @@ const names = list => (list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${
  * Chat about one Space, or, when space is null, every Space shared with Muse. Only ever knows about its own
  * scope; notShared are listed so a person can go and share one.
  */
-export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenSpace, onDraftListing }) {
+/** opening: from the dock on My home, { ask } to send a starter question at once, or { focus } to start typing. */
+export default function AskMuse({ spaces, notShared = [], people = [], space, onBack, onOpenSpace, onDraftListing, opening }) {
   const scope = space ? space.spaceName : names(spaces.map(s => s.spaceName))
   const heading = space || spaces.length <= 2 ? scope || 'No Spaces shared' : `${spaces.length} Spaces`
   const nothingShared = !space && spaces.length === 0
@@ -121,12 +123,24 @@ export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenS
   const [error, setError] = useState(null)
   const [cited, setCited] = useState(null)
   const end = useRef(null)
+  const [loaded, setLoaded] = useState(false)
+  const opened = useRef(false)
 
   useEffect(() => {
     let cancelled = false
-    loadChat(chatKey).then(saved => { if (!cancelled && saved) setMessages(saved) })
+    loadChat(chatKey).then(saved => { if (cancelled) return; if (saved) setMessages(saved); setLoaded(true) })
     return () => { cancelled = true }
   }, [chatKey])
+
+  // A starter tapped on the dock is asked once the saved chat is in, so it follows what's already there.
+  useEffect(() => {
+    if (!loaded || opened.current || nothingShared) return
+    opened.current = true
+    if (opening?.ask) send(opening.ask)
+    else if (opening?.focus) document.querySelector('.ask-muse-input input')?.focus()
+    // Runs once, when the chat has loaded.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
 
   useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }) }, [messages, waiting])
 
@@ -140,10 +154,10 @@ export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenS
     setWaiting(true)
     saveChat(chatKey, asked)
     try {
-      const { nodes, places } = buildGraph(inScope)
+      const { nodes, places } = buildGraph(inScope, people)
       // Past answers go back as plain text, with citations written as the item's name.
       const history = asked.map(m => ({ role: m.role, text: m.text ?? m.parts.map(p => p.text ?? p.cite.name).join('') }))
-      const { answer, action } = await askMuse({ scope, spaces: nodes, messages: history })
+      const { answer, action } = await askMuse({ scope, spaces: nodes, messages: history, today: isoDay() })
       const offer = action && places[action.ref] ? { type: action.type, cite: places[action.ref] } : null
       const done = [...asked, { role: 'assistant', parts: toParts(answer, places), ...(offer && { action: offer }) }]
       setMessages(done)
@@ -185,7 +199,7 @@ export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenS
         )}
         {messages.length === 0 && !nothingShared && (
           <VStack gap={2}>
-            <Text as="p" color="secondary">Muse answers from what you've scanned, and shows where it saw each item.</Text>
+            <Text as="p" color="secondary">Muse answers from what you've scanned and your tasks, and shows where it saw each item.</Text>
             {STARTERS[space ? 'one' : 'all'].map(s => <Button key={s} label={s} onClick={() => send(s)} />)}
           </VStack>
         )}
@@ -207,9 +221,12 @@ export default function AskMuse({ spaces, notShared = [], space, onBack, onOpenS
         <span ref={end} />
       </VStack>
 
+      {/* The same gold-edged box as the dock on My home, so tapping the dock feels like this box coming to life. */}
       <form className="ask-muse-input" onSubmit={e => { e.preventDefault(); send(draft) }}>
-        <TextInput label="Your question" isLabelHidden placeholder={nothingShared ? 'Share a Space first' : 'Ask about your things'} isDisabled={nothingShared} value={draft} onChange={setDraft} />
-        <Button label="Send" type="submit" variant="primary" isDisabled={nothingShared || !draft.trim() || waiting} />
+        <HStack gap={1} vAlign="center" className="muse-box">
+          <TextInput label="Your question" isLabelHidden placeholder={nothingShared ? 'Share a Space first' : `Ask Muse about ${space ? space.spaceName : 'your home'}`} isDisabled={nothingShared} value={draft} onChange={setDraft} containerClassName="grow" controlClassName="muse-box-control" />
+          <Button label="Send" type="submit" variant="primary" icon={<Icon icon="arrowUp" size="sm" />} isIconOnly className="muse-send" isDisabled={nothingShared || !draft.trim() || waiting} />
+        </HStack>
       </form>
 
       {cited && <Citation cited={cited} onClose={() => setCited(null)} />}

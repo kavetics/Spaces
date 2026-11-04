@@ -1,8 +1,9 @@
-// Sharing a Space with the Muse app: its item list goes to the Spaces server. Room photos never do;
+// Sharing a Space with the Muse app: its item list and tasks go to the Spaces server. Room photos never do;
 // items marked Sell also send up to 3 small sale photos and their listing draft, so Muse can list them.
 import { pictureOf } from './crop.js'
 import { decisionOf, shareableFields } from './itemFields.js'
 import { categoryOf, sortItems } from './spaceItems.js'
+import { personOf, thingsOf } from './tasks.js'
 
 export const MAX_LISTING_PHOTOS = 3
 const LISTING_PHOTO_PX = 640 // clear enough for a listing, small enough to send
@@ -22,7 +23,7 @@ export function setOwnerKey(key) {
  * marked Sell add their listing draft. Photos are added when sending (see shareSpace); here, the
  * time an item last changed stands in for them, so a new sale photo makes the Space send again.
  */
-export function sharePayload(space) {
+export function sharePayload(space, people = []) {
   const { inSpace, nearby } = sortItems(space)
   const item = (i, isNearby) => ({
     name: i.name,
@@ -43,6 +44,15 @@ export function sharePayload(space) {
     name: space.spaceName,
     scannedAt: new Date(space.savedAt).toISOString(),
     items: [...inSpace.map(i => item(i, false)), ...nearby.map(i => item(i, true))],
+    // Tasks go by name: who does each one and which Things, never phone numbers or relationships.
+    tasks: (space.tasks ?? []).map(t => ({
+      name: t.name,
+      repeat: t.repeat,
+      due: t.due,
+      done: Boolean(t.doneAt),
+      who: personOf(t, people)?.name ?? null,
+      things: thingsOf(t, space.result?.items ?? []).map(i => i.name),
+    })),
   }
 }
 
@@ -73,8 +83,8 @@ async function listingPhotos(item) {
   return usable.length ? usable : item.picture?.startsWith('data:image/jpeg') ? [item.picture] : []
 }
 
-export async function shareSpace(space, key) {
-  const payload = sharePayload(space)
+export async function shareSpace(space, key, people) {
+  const payload = sharePayload(space, people)
   const { inSpace, nearby } = sortItems(space)
   const items = [...inSpace, ...nearby]
   payload.items = await Promise.all(payload.items.map(async (sent, n) => (

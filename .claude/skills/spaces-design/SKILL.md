@@ -17,11 +17,12 @@ Space (a room, the backyard)
 ├── Things      items found by the scan or added by hand: name, category, photos, details
 │   └── a decision: Keep, Sell or Let go (and for Sell: price, condition, listing)
 ├── People      who shares the home, added by hand, never detected in photos
+├── Tasks       chores on the Space: how often, next due, who, and any of its Things; Muse suggests some
 └── Decisions   what People and Things produce together: decluttering (solo), family votes
 ```
 
-Later layers, on the roadmap and not in the UI yet: Memories (stories on Things), Tasks and chores
-(repeatable, like watering the backyard plants), and People linked to Spaces beyond "used by".
+Later layers, on the roadmap and not in the UI yet: Memories (stories on Things) and People linked
+to Spaces beyond "used by".
 Don't design for them unless asked; mention them only as what's next.
 
 The payoff is Muse: Ask Muse inside the app, and the connector that lets Muse in the Meta AI app read

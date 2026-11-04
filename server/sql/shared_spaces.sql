@@ -5,9 +5,13 @@ create table if not exists shared_spaces (
   name text not null,
   scanned_at timestamptz not null,
   items jsonb not null,         -- [{ name, description, quantity, category, nearby, area, unsure }]
+  tasks jsonb not null default '[]', -- [{ name, repeat, due, done, who, things }]
   shared_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- Row level security with no policies: the public keys can't touch this table at all.
 alter table shared_spaces enable row level security;
+
+-- Added with Tasks. For a table made before then, run this once:
+alter table shared_spaces add column if not exists tasks jsonb not null default '[]';

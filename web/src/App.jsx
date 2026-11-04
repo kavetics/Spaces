@@ -9,9 +9,10 @@ import ItemDetail from './ItemDetail.jsx'
 import People from './People.jsx'
 import { deleteChat, deleteSpace, loadPeople, loadSpaces, savePeople, saveSpace } from './savedSpaces.js'
 import SpacePicker from './SpacePicker.jsx'
-import Splash, { wantsSplash } from './Splash.jsx'
 import Selling from './Selling.jsx'
 import SpacesPage from './SpacesPage.jsx'
+import TaskForm from './TaskForm.jsx'
+import { relinkTasks, unlinkTask } from './tasks.js'
 import VoteSetup, { VoteCard } from './VoteSetup.jsx'
 import VoteReview from './VoteReview.jsx'
 import { resultsFor, tally, tallyLine, topPick } from './votes.js'
@@ -35,8 +36,8 @@ function withHandItems(result, handItems) {
 
 export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
+  const [askOpening, setAskOpening] = useState(null) // a starter from the dock on My home, or focus the box
   const [spaces, setSpaces] = useState([])
-  const [splash, setSplash] = useState(wantsSplash) // the short opening, on each load that has Spaces
   const [people, setPeople] = useState([]) // the household, added by hand or from contacts
   const [backTo, setBackTo] = useState('spaces') // where People and Ask Muse go back to
   const [voteSetup, setVoteSetup] = useState(null) // making a vote link: { preselect: item ids or null for all, from: screen }
@@ -56,12 +57,14 @@ export default function App() {
   const running = useRef(null) // only one Space is recognized at a time, since each run costs money
   const picturing = useRef(null) // pictures are made for one Space at a time, to keep memory low
   const synced = useRef({}) // id → the item list the server last got, so unchanged Spaces aren't sent again
+  const [taskOpen, setTaskOpen] = useState(null) // the task page: { spaceId, taskId or null for a new one, from }
   const [ownerKey, setOwnerKeyState] = useState(getOwnerKey) // only the owner's phone sends shared Spaces to the Meta AI app
   const [shareErrors, setShareErrors] = useState({}) // id → why keeping a shared Space up to date failed
   const fileInput = useRef(null)
 
   const open = spaces.find(s => s.id === openId)
   const openItem = open?.result?.items.find(i => i.id === openItemId)
+  const taskSpace = taskOpen && spaces.find(s => s.id === taskOpen.spaceId)
   const processing = spaces.some(s => (!s.result || s.addFrames) && !failed[s.id])
 
   useEffect(() => {
@@ -71,7 +74,6 @@ export default function App() {
       setSpaces(saved)
       setPeople(household)
       setScreen(saved.length ? 'spaces' : 'home')
-      if (!saved.length) setSplash(false) // first time: the welcome screen is the opening
     })
     return () => { cancelled = true }
   }, [])
@@ -94,7 +96,10 @@ export default function App() {
     running.current = next.id
     setProgress(null)
     const work = next.result ? addToSpace(next) : buildInventory(next.frames, next.spaceName, setProgress)
-      .then(result => change(next.id, ({ handItems = [], ...s }) => ({ ...s, result: withHandItems(result, handItems) })))
+      .then(result => change(next.id, ({ handItems = [], ...s }) => {
+        const done = withHandItems(result, handItems)
+        return { ...s, result: done, tasks: relinkTasks(s.tasks, done.items) }
+      }))
     work
       .catch(err => setFailed(f => ({ ...f, [next.id]: err.message })))
       // A run's own update lands while it still counts as running, so look for queued work again after.
@@ -168,23 +173,23 @@ export default function App() {
   // Waits a moment so quick edits go as one update.
   useEffect(() => {
     const key = ownerKey
-    const stale = spaces.filter(s => s.shared && s.result && synced.current[s.id] !== JSON.stringify(sharePayload(s)))
+    const stale = spaces.filter(s => s.shared && s.result && synced.current[s.id] !== JSON.stringify(sharePayload(s, people)))
     if (!key || !stale.length) return
     const timer = setTimeout(() => stale.forEach(space => {
-      const sent = JSON.stringify(sharePayload(space))
-      shareSpace(space, key)
+      const sent = JSON.stringify(sharePayload(space, people))
+      shareSpace(space, key, people)
         .then(() => { synced.current[space.id] = sent; setShareErrors(({ [space.id]: _, ...rest }) => rest) })
         .catch(err => setShareErrors(e => ({ ...e, [space.id]: err.message })))
     }), 800)
     return () => clearTimeout(timer)
-  }, [spaces, ownerKey])
+  }, [spaces, ownerKey, people])
 
   // Share with Muse puts a Space in Ask Muse's context. On the owner's phone it also goes to the Spaces server
   // for Muse in the Meta AI app, right away, so a server problem shows up here and the switch stays as it was.
   async function setSharing(space, on) {
     if (ownerKey && on) {
-      await shareSpace(space, ownerKey)
-      synced.current[space.id] = JSON.stringify(sharePayload(space))
+      await shareSpace(space, ownerKey, people)
+      synced.current[space.id] = JSON.stringify(sharePayload(space, people))
     } else if (ownerKey) {
       await unshareSpace(space.id, ownerKey)
       delete synced.current[space.id]
@@ -226,6 +231,8 @@ export default function App() {
       handItems: [...(previous?.handItems ?? []), ...(previous?.result?.items.filter(i => i.addedByHand) ?? [])],
       itemChoices: {},
       shared: previous?.shared ?? false, // a rescan of a shared Space updates what Muse sees once it's ready
+      // Tasks stay. Their Things are held by name until the new list is ready, then found again by name.
+      tasks: (previous?.tasks ?? []).map(t => unlinkTask(t, previous.result?.items ?? [])),
       createdAt: previous?.createdAt ?? Date.now(),
       savedAt: Date.now(),
     }
@@ -355,16 +362,39 @@ export default function App() {
 
   // Deletes the item and returns how to put it back. A rescan in between makes that do nothing.
   function removeItem(id, item) {
-    const { savedAt, result } = spaces.find(s => s.id === id)
+    const { savedAt, result, tasks = [] } = spaces.find(s => s.id === id)
     const position = result.items.findIndex(i => i.id === item.id)
-    change(id, s => ({ ...s, result: { ...s.result, items: s.result.items.filter(i => i.id !== item.id) } }))
+    // Tasks let go of it too, so a later item given the same id isn't linked by mistake. Undo links it back.
+    const linked = tasks.filter(t => t.thingIds?.includes(item.id)).map(t => t.id)
+    change(id, s => ({
+      ...s,
+      result: { ...s.result, items: s.result.items.filter(i => i.id !== item.id) },
+      tasks: (s.tasks ?? []).map(t => (linked.includes(t.id) ? { ...t, thingIds: t.thingIds.filter(n => n !== item.id) } : t)),
+    }))
     return () => change(id, s => {
       if (s.savedAt !== savedAt || s.result?.items.some(i => i.id === item.id)) return s
       const items = [...s.result.items]
       items.splice(position, 0, item)
-      return { ...s, result: { ...s.result, items } }
+      return {
+        ...s,
+        result: { ...s.result, items },
+        tasks: (s.tasks ?? []).map(t => (linked.includes(t.id) ? { ...t, thingIds: [...(t.thingIds ?? []), item.id] } : t)),
+      }
     })
   }
+
+  // Tasks live on their Space. Done, its next date and Undo are worked out in TaskList; here they're saved.
+  function addTask(spaceId, fields) {
+    const task = { id: crypto.randomUUID(), name: fields.name, repeat: fields.repeat, due: fields.due, personId: fields.personId ?? null, thingIds: fields.thingIds ?? [], ...(fields.reason !== undefined && { suggested: true }), createdAt: new Date().toISOString() }
+    change(spaceId, s => ({ ...s, tasks: [...(s.tasks ?? []), task] }))
+  }
+  function updateTask(spaceId, taskId, patch) {
+    change(spaceId, s => ({ ...s, tasks: (s.tasks ?? []).map(t => (t.id === taskId ? { ...t, ...patch } : t)) }))
+  }
+  function removeTask(spaceId, taskId) {
+    change(spaceId, s => ({ ...s, tasks: (s.tasks ?? []).filter(t => t.id !== taskId) }))
+  }
+  const openTask = (spaceId, taskId, from = screen) => { setTaskOpen({ spaceId, taskId, from }); setScreen('task') }
 
   // A shared Space comes off the server first, so deleting it here can't leave its items with Muse.
   async function onDelete() {
@@ -387,7 +417,6 @@ export default function App() {
 
   return (
     <>
-      {splash && screen && <Splash onDone={() => setSplash(false)} />}
       <input ref={fileInput} type="file" accept="image/*" hidden onChange={onPhotoFile} />
 
       {screen === 'home' && <Welcome loadScanner={loadScanner} onAccept={() => setScreen('pick')} />}
@@ -399,10 +428,11 @@ export default function App() {
           processing={processing}
           onOpen={id => { setOpenId(id); setScreen('space') }}
           onScanAnother={() => setScreen('pick')}
-          onAsk={() => { setBackTo('spaces'); setScreen('ask-all') }}
+          onAsk={opening => { setAskOpening(opening ?? null); setBackTo('spaces'); setScreen('ask-all') }}
           onSelling={() => openSelling('all', 'spaces')}
           people={people}
           onPeople={() => { setBackTo('spaces'); setScreen('people') }}
+          onTaskChange={(spaceId, task, patch) => updateTask(spaceId, task.id, patch)}
         />
       )}
 
@@ -476,7 +506,7 @@ export default function App() {
           onPeople={() => { setBackTo('space'); setScreen('people') }}
           declutterLeft={leftToDeclutter[open.id]}
           usedBy={people.filter(p => p.spaceIds?.includes(open.id))}
-          voteCard={<VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} />}
+          voteCard={side => <VoteCard space={open} results={resultsFor(open, voteResults[open.id])} onAsk={() => askFamily()} onOpen={() => setScreen('vote-review')} side={side} />}
           onOpenItem={id => { setOpenItemId(id); setItemFrom(null); setScreen('item') }}
           focusItem={focusItem}
           onFocused={() => setFocusItem(null)}
@@ -484,6 +514,10 @@ export default function App() {
           hasOwnerKey={Boolean(ownerKey)}
           onShare={on => setSharing(open, on)}
           onOwnerKey={connectOwner}
+          people={people}
+          onTaskChange={(task, patch) => updateTask(open.id, task.id, patch)}
+          onOpenTask={taskId => openTask(open.id, taskId, 'space')}
+          onAddTask={fields => addTask(open.id, fields)}
         />
       )}
 
@@ -518,6 +552,7 @@ export default function App() {
           onSelling={() => openSelling('all', 'space')}
           onUpdateItem={(itemId, patch) => updateItem(open.id, itemId, patch)}
           onExit={() => setScreen('space')}
+          onFinish={() => change(open.id, s => ({ ...s, declutteredAt: new Date().toISOString() }))}
         />
       )}
 
@@ -564,11 +599,30 @@ export default function App() {
         />
       )}
 
+      {screen === 'task' && taskSpace?.result && (
+        <TaskForm
+          key={taskOpen.taskId ?? 'new'}
+          task={taskSpace.tasks?.find(t => t.id === taskOpen.taskId) ?? null}
+          spaceName={taskSpace.spaceName}
+          things={sortItems(taskSpace).inSpace}
+          people={people}
+          onClose={() => setScreen(taskOpen.from)}
+          onSave={fields => {
+            if (taskOpen.taskId) updateTask(taskSpace.id, taskOpen.taskId, fields)
+            else addTask(taskSpace.id, fields)
+            setScreen(taskOpen.from)
+          }}
+          onRemove={() => { removeTask(taskSpace.id, taskOpen.taskId); setScreen(taskOpen.from) }}
+        />
+      )}
+
       {screen === 'ask-all' && (
         <AskMuse
           spaces={spaces.filter(s => s.shared && s.result)}
           notShared={spaces.filter(s => !s.shared && s.result)}
+          people={people}
           space={null}
+          opening={askOpening}
           onBack={() => setScreen(backTo)}
           onOpenSpace={id => { setOpenId(id); setScreen('space') }}
           onDraftListing={draftFromChat}

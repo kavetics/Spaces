@@ -49,3 +49,8 @@
   outline: 2px solid var(--color-accent);
 }
 .citation-photo { overflow: hidden; border-radius: var(--radius-element); }
+
+/* The question box: a gold-edged pill with a round gold send button inside, matching the dock on My home. */
+.muse-box { border: 1px solid var(--color-text-accent); border-radius: var(--radius-full); padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) var(--spacing-2); }
+.muse-box-control.muse-box-control { border-color: transparent; background-color: transparent; box-shadow: none; }
+button.muse-send.muse-send { border-radius: var(--radius-full); }

@@ -47,29 +47,24 @@ export function ShareVoteLink({ space, people, primary = true }) {
 }
 
 /** In a Space's Decisions: the family vote in one line, and one button for what to do next. */
-export function VoteCard({ space, results, onAsk, onOpen }) {
+/**
+ * The family vote's button, Ask family, then See votes, then See results, beside an optional second button
+ * (the Space's Sell & let go list) as two equal halves of one row. How the vote stands wraps below at full
+ * width, so a long list of names can't squeeze the buttons.
+ */
+export function VoteCard({ space, results, onAsk, onOpen, side }) {
   const link = space.voteLink
-  if (!link) {
-    return (
-      <HStack gap={2} vAlign="center" hAlign="between">
-        <Text as="p">Family vote</Text>
-        <Button label="Ask family" onClick={onAsk} />
-      </HStack>
-    )
-  }
-  const { voted, waiting } = turnout(space, results)
-  const line = link.final
-    ? `Ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
-    : `${voted.length ? `${andList(voted)} voted` : 'No votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
+  const { voted, waiting } = link ? turnout(space, results) : { voted: [], waiting: [] }
+  const line = !link ? null : link.final
+    ? `Family vote ended ${voteDay(link.final.endedAt)} · ${voted.length} of ${link.voters.length} voted`
+    : `Family vote: ${voted.length ? `${andList(voted)} voted` : 'no votes yet'}${waiting.length ? ` · waiting for ${andList(waiting)}` : ''}`
+  const vote = link
+    ? <Button label={link.final ? 'See results' : 'See votes'} className="grow" onClick={onOpen} />
+    : <Button label="Ask family" className="grow" onClick={onAsk} />
   return (
-    // The button sits on the title's row and the line wraps below at full width, so a long list of names
-    // can't squeeze the button.
     <VStack gap={1}>
-      <HStack gap={2} vAlign="center" hAlign="between">
-        <Text as="p">Family vote</Text>
-        <Button label={link.final ? 'See results' : 'See votes'} onClick={onOpen} />
-      </HStack>
-      <Text as="p" type="supporting" color="secondary">{line}</Text>
+      <HStack gap={2}>{vote}{side}</HStack>
+      {line && <Text as="p" type="supporting" color="secondary">{line}</Text>}
     </VStack>
   )
 }

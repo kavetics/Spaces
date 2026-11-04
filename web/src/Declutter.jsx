@@ -137,7 +137,7 @@ export const declutterLeft = spaceId => loadChat(sessionKey(spaceId)).then(s => 
 /** Forget a Space's place, when the Space is deleted or rescanned (its item ids start over). */
 export const forgetDeclutter = spaceId => deleteChat(sessionKey(spaceId))
 
-export default function Declutter({ space, familyVotes, onAskFamily, onSelling, onUpdateItem, onExit }) {
+export default function Declutter({ space, familyVotes, onAskFamily, onSelling, onUpdateItem, onExit, onFinish }) {
   const [stack, setStack] = useState(null)
   const [place, setPlace] = useState(0)
   const [history, setHistory] = useState([]) // what each decision replaced, so Undo can put it back
@@ -164,8 +164,11 @@ export default function Declutter({ space, familyVotes, onAskFamily, onSelling, 
   // The session is saved as it goes, so stopping, a reload or a sleeping phone can't lose the place.
   useEffect(() => {
     if (!stack) return
-    if (place >= stack.length) deleteChat(key)
+    // Reaching the end is what "Decluttered on" on the Space counts.
+    if (place >= stack.length) { deleteChat(key); if (stack.length) onFinish?.() }
     else saveChat(key, { stack, place, history, savedAt: Date.now() })
+    // onFinish is new on every render; the end is reached once per run.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, stack, place, history])
 
   if (saved === undefined) return null

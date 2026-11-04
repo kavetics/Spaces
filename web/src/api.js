@@ -57,12 +57,12 @@ export async function buildInventory(frames, space, onProgress = () => {}) {
 
 // Ask Muse about the Spaces in view. Spark can take a while, but a question shouldn't hang forever.
 const ASK_LIMIT_MS = 90000;
-export async function askMuse({ scope, spaces, messages }) {
+export async function askMuse({ scope, spaces, messages, today }) {
   try {
     return await json(await fetch('/api/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scope, spaces, messages }),
+      body: JSON.stringify({ scope, spaces, messages, today }),
       signal: AbortSignal.timeout(ASK_LIMIT_MS),
     }));
   } catch (err) {
@@ -101,6 +101,21 @@ export async function draftListing(item) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ item }),
+      signal: AbortSignal.timeout(90000),
+    }));
+  } catch (err) {
+    if (isConnectionError(err)) throw new Error("Couldn't reach Muse. Check your connection.");
+    throw err;
+  }
+}
+
+// Chores Muse suggests for a Space. Only the Things' names and descriptions and the people's names are sent.
+export async function suggestTasks({ space, things, people, existing }) {
+  try {
+    return await json(await fetch('/api/tasks/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ space, things, people, existing }),
       signal: AbortSignal.timeout(90000),
     }));
   } catch (err) {

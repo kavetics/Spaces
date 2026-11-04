@@ -1,5 +1,5 @@
-// A read-only API for the Muse app. It serves only the Spaces their owner chose to share, as names and
-// item lists without photos. Nothing here can change data.
+// A read-only API for the Muse app. It serves only the Spaces their owner chose to share, as names,
+// item lists and tasks, without room photos. Nothing here can change data.
 import express from 'express';
 import { listShared, sameKey } from './shared.js';
 
@@ -66,17 +66,29 @@ function requireKey(req, res, next) {
 
 const OPENAPI = {
   openapi: '3.0.3',
-  info: { title: 'Spaces', version: '0.3.0', description: 'Read-only search of the home inventory Spaces its owner chose to share. Items marked nearby were seen near a Space, not in it. scanned is when the Space was photographed, so things may have changed since. Items the owner marked Sell carry a `listing` ready for Facebook Marketplace: title, description, price in dollars, condition in Marketplace values, a Spaces category to map to the closest Marketplace one, and up to 3 photos as data:image/jpeg;base64 strings to decode and save as .jpg files. `missing` lists what Marketplace still needs; ask the owner for those, and for their location. /listings returns only items for sale.' },
+  info: { title: 'Spaces', version: '0.4.0', description: 'Read-only search of the home inventory Spaces its owner chose to share. Items marked nearby were seen near a Space, not in it. scanned is when the Space was photographed, so things may have changed since. Items the owner marked Sell carry a `listing` ready for Facebook Marketplace: title, description, price in dollars, condition in Marketplace values, a Spaces category to map to the closest Marketplace one, and up to 3 photos as data:image/jpeg;base64 strings to decode and save as .jpg files. `missing` lists what Marketplace still needs; ask the owner for those, and for their location. /listings returns only items for sale. /tasks lists the chores the owner set up for each shared Space: what, how often (once, weekly, 2weeks, monthly), the next due date (YYYY-MM-DD, the owner\'s local day), who does it and which Things it is for.' },
   servers: [{ url: '/api/connector/v1' }],
   security: [{ key: [] }],
   components: { securitySchemes: { key: { type: 'http', scheme: 'bearer' } } },
   paths: {
     '/ping': { get: { summary: 'Check the connection. Harmless.', responses: { 200: { description: 'OK' }, 401: { description: 'Missing or wrong key' } } } },
-    '/spaces': { get: { summary: 'List shared Spaces, when each was scanned, and item counts.', responses: { 200: { description: 'OK' } } } },
+    '/spaces': { get: { summary: 'List shared Spaces, when each was scanned, item counts and open task counts.', responses: { 200: { description: 'OK' } } } },
     '/listings': {
       get: {
         summary: 'Items the owner marked Sell and has not sold yet, each with a Marketplace-ready listing and photos.',
         parameters: [{ name: 'space', in: 'query', schema: { type: 'string' }, description: 'A Space id from /spaces.' }],
+        responses: { 200: { description: 'OK' } },
+      },
+    },
+    '/tasks': {
+      get: {
+        summary: 'Chores on shared Spaces, soonest first: what, how often, when it is next due, who, and which Things. Done one-time tasks are left out unless done=true.',
+        parameters: [
+          { name: 'space', in: 'query', schema: { type: 'string' }, description: 'A Space id from /spaces.' },
+          { name: 'who', in: 'query', schema: { type: 'string' }, description: 'Only tasks for this person, by name.' },
+          { name: 'due_before', in: 'query', schema: { type: 'string', format: 'date' }, description: 'Only tasks due on or before this day, like 2026-11-09.' },
+          { name: 'done', in: 'query', schema: { type: 'boolean', default: false }, description: 'Include one-time tasks already done.' },
+        ],
         responses: { 200: { description: 'OK' } },
       },
     },
@@ -96,6 +108,18 @@ const OPENAPI = {
   },
 };
 
+/** Every shared Space's tasks, flat and soonest first, filtered by Space, person and due date in plain code. */
+export function filterTasks(spaces, { space, who, due_before: dueBefore, done } = {}) {
+  const name = String(who ?? '').trim().toLowerCase();
+  return spaces
+    .flatMap(s => (s.tasks ?? []).map(t => ({ space: s.id, space_name: s.name, ...t })))
+    .filter(t => (!space || t.space === space)
+      && (!name || t.who?.toLowerCase() === name)
+      && (!dueBefore || t.due <= dueBefore)
+      && (done === 'true' || !t.done))
+    .sort((a, b) => a.due.localeCompare(b.due));
+}
+
 const intParam = (value, fallback, max) => {
   const n = Number.parseInt(value, 10);
   return Number.isNaN(n) || n < 0 ? fallback : Math.min(n, max);
@@ -110,7 +134,7 @@ connector.get('/ping', (_req, res) => res.json({ ok: true }));
 connector.get('/spaces', async (_req, res, next) => {
   try {
     const { spaces } = await sharedItems();
-    res.json({ spaces: spaces.map(s => ({ id: s.id, name: s.name, scanned: s.scanned_at.slice(0, 10), items: s.items.length })) });
+    res.json({ spaces: spaces.map(s => ({ id: s.id, name: s.name, scanned: s.scanned_at.slice(0, 10), items: s.items.length, open_tasks: (s.tasks ?? []).filter(t => !t.done).length })) });
   } catch (err) { next(err); }
 });
 connector.get('/listings', async (req, res, next) => {
@@ -118,6 +142,11 @@ connector.get('/listings', async (req, res, next) => {
     const { space } = req.query;
     const items = (await sharedItems()).items.filter(i => i.listing && i.listing.status !== 'sold' && (!space || i.space === space));
     res.json({ total: items.length, items });
+  } catch (err) { next(err); }
+});
+connector.get('/tasks', async (req, res, next) => {
+  try {
+    res.json({ tasks: filterTasks(await listShared(), req.query) });
   } catch (err) { next(err); }
 });
 connector.get('/items', async (req, res, next) => {

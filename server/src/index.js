@@ -11,6 +11,7 @@ import { votes } from './votes.js';
 import { describeForSale } from './itemDetails.js';
 import { findRepeats } from './repeats.js';
 import { draftListing } from './listing.js';
+import { suggestTasks, limits as taskLimits } from './tasks.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -29,9 +30,9 @@ app.use('/api/votes', votes);
 // A whole home's inventory comes with each question, since it's stored on the phone.
 app.post('/api/ask', express.json({ limit: '2mb' }), async (req, res, next) => {
   try {
-    const { scope, spaces, messages } = req.body ?? {};
+    const { scope, spaces, messages, today } = req.body ?? {};
     if (!Array.isArray(spaces) || !Array.isArray(messages) || !messages.length) throw Object.assign(new Error('Send spaces and messages.'), { status: 400 });
-    res.json(await askMuse({ scope, spaces, messages }));
+    res.json(await askMuse({ scope, spaces, messages, today }));
   } catch (err) { next(err); }
 });
 
@@ -41,6 +42,20 @@ app.post('/api/repeats', express.json({ limit: '8mb' }), async (req, res, next) 
     const { space, existing, added } = req.body ?? {};
     if (!Array.isArray(existing) || !Array.isArray(added)) throw Object.assign(new Error('Send existing and added items.'), { status: 400 });
     res.json(await findRepeats({ space, existing: existing.slice(0, 300), added: added.slice(0, 300) }));
+  } catch (err) { next(err); }
+});
+
+// Chores Muse suggests for a Space, from its Things' names and who uses it. Nothing is saved here.
+app.post('/api/tasks/suggest', express.json({ limit: '256kb' }), async (req, res, next) => {
+  try {
+    const { space, things, people, existing } = req.body ?? {};
+    if (!Array.isArray(things)) throw Object.assign(new Error('Send the Space\'s things.'), { status: 400 });
+    res.json(await suggestTasks({
+      space,
+      things: things.slice(0, taskLimits.MAX_THINGS),
+      people: Array.isArray(people) ? people.slice(0, taskLimits.MAX_PEOPLE) : [],
+      existing: Array.isArray(existing) ? existing.slice(0, 50) : [],
+    }));
   } catch (err) { next(err); }
 });
 

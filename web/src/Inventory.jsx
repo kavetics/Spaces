@@ -7,22 +7,26 @@ import { Collapsible } from '@astryxdesign/core/Collapsible'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { Divider } from '@astryxdesign/core/Divider'
 import { Layout, LayoutContent } from '@astryxdesign/core/Layout'
-import { Switch } from '@astryxdesign/core/Switch'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
 import { List, ListItem } from '@astryxdesign/core/List'
+import { ProgressBar } from '@astryxdesign/core/ProgressBar'
 import { Spinner } from '@astryxdesign/core/Spinner'
 import { Text } from '@astryxdesign/core/Text'
+import { ToggleButton } from '@astryxdesign/core/ToggleButton'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
 import { shrinkPhoto } from './api.js'
 import { byYou, decisionLabel, decisionOf, progress as itemProgress } from './itemFields.js'
-import Initials, { peopleLabel } from './Initials.jsx'
+import Initials from './Initials.jsx'
 import ItemForm from './ItemForm.jsx'
 import ScanPulse from './ScanPulse.jsx'
+import TaskList from './TaskList.jsx'
+import TaskSuggest from './TaskSuggest.jsx'
+import { sortTasks } from './tasks.js'
 import { CATEGORIES, categoryOf, countLabel, scannedAt, sortItems } from './spaceItems.js'
 import './Inventory.css'
 
@@ -30,11 +34,11 @@ import './Inventory.css'
 // key is offered only in builds that turn it on. Share with Muse itself (for Ask Muse) works for anyone.
 const SHOW_SHARING = import.meta.env.VITE_SHOW_SHARING === 'true'
 const NEARBY = 'nearby'
-const INVENTORY = 'inventory'
-const STARTS_CLOSED = [NEARBY, INVENTORY]
+const TASKS_DONE = 'tasks-done'
+const STARTS_CLOSED = [NEARBY, TASKS_DONE]
 const UNDO_MS = 6000
 /** One Space: its items by category, or its progress while they're being found. */
-export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling, onPeople, onOwnerKey }) {
+export default function Inventory({ space, progress, error, onRetry, onItemChoice, onRemoveItem, onSectionToggle, onDelete, onRescan, onBack, onOpenItem, focusItem, onFocused, shareError, hasOwnerKey, onShare, onScanMore, onAddPhotos, onDiscardAdded, onConfirmRepeat, onAddItem, onDeclutter, declutterLeft, usedBy, voteCard, onSelling, onPeople, onOwnerKey, people = [], onTaskChange, onOpenTask, onAddTask }) {
   const { frames, spaceName, result, savedAt, openSections = {} } = space
   const toast = useToast()
   const [addingItem, setAddingItem] = useState(false)
@@ -48,10 +52,15 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   const [askShare, setAskShare] = useState(false) // confirming Share with Muse
   const inSpaceCount = result ? sortItems(space).inSpace.length : 0
   const [shareProblem, setShareProblem] = useState(null)
+  const [suggesting, setSuggesting] = useState(false)
+  const [category, setCategory] = useState(null) // the one category chip that's open, if any
 
   // After saving an item, bring it into view in the list.
   useEffect(() => {
     if (focusItem == null) return
+    // Its category opens first, so the row is there to scroll to.
+    const saved = result?.items.find(i => i.id === focusItem)
+    if (saved) setCategory(categoryOf(saved))
     const timer = setTimeout(() => {
       document.querySelector(`[data-item="${focusItem}"]`)?.scrollIntoView?.({ block: 'center' })
       onFocused()
@@ -147,8 +156,8 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
                   description={hasOwnerKey ? "To Meta's AI and to the Spaces server. You can turn it off any time." : "To Meta's AI, each time you ask Muse something. You can turn it off any time."}
                 />
                 <List edge="flush">
-                  <ListItem label={<Text as="p">Ask Muse on My home can use its {countLabel(inSpaceCount, 'thing')}, who uses it and your decisions.</Text>} />
-                  {hasOwnerKey && <ListItem label={<Text as="p">Muse in the Meta AI app can read the same list, saved on the Spaces server.</Text>} />}
+                  <ListItem label={<Text as="p">Ask Muse on My home can use its {countLabel(inSpaceCount, 'thing')}, who uses it, its tasks and your decisions.</Text>} />
+                  {hasOwnerKey && <ListItem label={<Text as="p">Muse in the Meta AI app can read the same list and tasks, with who does each, saved on the Spaces server.</Text>} />}
                   {hasOwnerKey && <ListItem label={<Text as="p">Things marked Sell also send up to 3 sale photos and their listing draft.</Text>} />}
                   <ListItem label={<Text as="p">Room photos stay on this phone.</Text>} />
                 </List>
@@ -224,6 +233,7 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
   const unread = warnings.failedPhotos.length
   const { inSpace, nearby, repeats } = sortItems(space)
   const adding = Boolean(space.addFrames)
+  const tasks = sortTasks(space.tasks)
 
   async function addFromLibrary(event) {
     const files = [...(event.target.files ?? [])]
@@ -254,7 +264,9 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
             </HStack>
           )}
           {byYou(item) && <Text as="p" type="supporting">{byYou(item)}</Text>}
-          {item.description && <Text as="p" type="supporting">{item.needsReview ? `Not sure. ${item.description}` : item.description}</Text>}
+          {item.needsReview
+            ? <Text as="p" type="supporting">{saysMore(item) ? `Not sure. ${item.description}` : 'Not sure.'}</Text>
+            : saysMore(item) && <Text as="p" type="supporting">{item.description}</Text>}
           {actionsBelow}
         </VStack>
       )}
@@ -275,16 +287,37 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
     </Collapsible>
   )
   const decided = itemProgress(inSpace)
-  const hasSelling = inSpace.some(i => ['sell', 'donate'].includes(decisionOf(i.status)))
+  const sellOrGo = inSpace.filter(i => ['sell', 'donate'].includes(decisionOf(i.status))).length
+  const allDecided = decided.total > 0 && decided.decided === decided.total
+  // The day it was all decided: the end of a Declutter run, or the last decision made by hand.
+  const decidedOn = allDecided ? latest([space.declutteredAt, ...inSpace.map(i => i.updatedAt)]) : null
   return (
     <VStack gap={5} padding={4} className="inventory">
       <HStack gap={2} vAlign="center" hAlign="between">
         {backButton}
         <IconButton label="More" icon={<Icon icon="moreHorizontal" />} onClick={() => setShowMore(true)} />
       </HStack>
-      <VStack gap={1}>
-        <Heading level={1}>{spaceName}</Heading>
-        <Text color="secondary">Scanned {scannedAt(savedAt)} · {countLabel(inSpace.length, 'thing')}</Text>
+      {/* The name, with Share with Muse level with it, then who shares this Space on one line. A long name wraps
+          beside the pill. Turning sharing on asks first, since data leaves the phone. */}
+      <VStack gap={2}>
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Heading level={1} className="grow">{spaceName}</Heading>
+          <ToggleButton
+            label={space.shared ? 'Sharing with Muse' : 'Share with Muse'}
+            icon={space.shared ? <Icon icon="check" size="sm" /> : undefined}
+            className="muse-pill"
+            size="sm"
+            isPressed={Boolean(space.shared)}
+            isDisabled={sharing}
+            onPressedChange={on => (on ? setAskShare(true) : toggleShare(false))}
+          />
+        </HStack>
+        {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
+        <HStack gap={2} vAlign="center">
+          {usedBy?.length > 0 && <Initials people={usedBy} />}
+          <Text color="secondary" className="grow">{usedBy?.length ? andList(usedBy.map(p => p.name)) : 'No one added yet'}</Text>
+          <Button label={usedBy?.length ? 'Edit people' : 'Add people'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} variant="ghost" className="gold-link" onClick={onPeople} />
+        </HStack>
       </VStack>
       {unread > 0 && <Banner status="warning" title={`${unread} ${unread === 1 ? 'photo' : 'photos'} couldn't be read, so some things may be missing.`} />}
       {items.length === 0 && <Text as="p">We didn't find anything. Try scanning again with more light.</Text>}
@@ -338,34 +371,30 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         </VStack>
       )}
 
-      {/* Things */}
+      {/* Things: a chip per category; tapping one shows its Things below, one category at a time. */}
       <VStack gap={2}>
-        {inSpace.length > 0
-          ? (
-            // Add sits on the heading's row but outside the dropdown's trigger, since a button can't hold another button.
-            <VStack className="inventory-with-action">
-              <Button label="Add" aria-label="Add a thing" className="inventory-action" onClick={() => setAddingItem(true)} />
-              {section(INVENTORY, `Things (${inSpace.length})`, (
-                <VStack gap={5} className="things-list">
-                  {CATEGORIES.map(([id, label]) => {
-                    const inCategory = inSpace.filter(i => categoryOf(i) === id)
-                    if (!inCategory.length) return null
-                    const sure = inCategory.filter(i => !i.needsReview)
-                    const unsure = inCategory.filter(i => i.needsReview)
-                    return section(id, `${label} (${inCategory.length})`, (
-                      <List hasDividers edge="flush">{[...sure, ...unsure].map(i => row(i, action(i, 'Remove', () => remove(i))))}</List>
-                    ), 3, 'things-category')
-                  })}
-                </VStack>
-              ), 2, 'inventory-action-trigger')}
-            </VStack>
-          )
-          : (
-            <HStack gap={2} vAlign="center" hAlign="between">
-              <Heading level={2}>Things</Heading>
-              <Button label="Add" aria-label="Add a thing" onClick={() => setAddingItem(true)} />
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Heading level={2}>{inSpace.length ? `Things (${inSpace.length})` : 'Things'}</Heading>
+          <Button label="Add" aria-label="Add a thing" onClick={() => setAddingItem(true)} />
+        </HStack>
+        {/* When the Things came from: the last scan of this Space. */}
+        {savedAt && <Text as="p" type="supporting" color="secondary">Scanned {scannedAt(savedAt)}</Text>}
+        {inSpace.length > 0 && (
+          <>
+            <HStack gap={2} wrap="wrap">
+              {CATEGORIES.map(([id, label]) => {
+                const n = inSpace.filter(i => categoryOf(i) === id).length
+                return n > 0 && <ToggleButton key={id} label={`${label} ${n}`} size="sm" className="category-chip" isPressed={category === id} onPressedChange={on => setCategory(on ? id : null)} />
+              })}
             </HStack>
-          )}
+            {/* Unsure Things come last in their category, each saying "Not sure." */}
+            {category && inSpace.some(i => categoryOf(i) === category) && (
+              <List hasDividers edge="flush" className="things-list">
+                {[...inSpace.filter(i => categoryOf(i) === category && !i.needsReview), ...inSpace.filter(i => categoryOf(i) === category && i.needsReview)].map(i => row(i, action(i, 'Remove', () => remove(i))))}
+              </List>
+            )}
+          </>
+        )}
         {nearby.length > 0 && section(NEARBY, `Also spotted nearby (${nearby.length})`, (
           <VStack gap={3}>
             {areas.map(area => (
@@ -385,59 +414,60 @@ export default function Inventory({ space, progress, error, onRetry, onItemChoic
         ), 3)}
       </VStack>
 
-      <Divider />
-      {/* People */}
-      <VStack gap={1}>
-        <HStack gap={2} vAlign="center" hAlign="between">
-          <Heading level={2}>People</Heading>
-          <Button label={usedBy?.length ? 'Edit' : 'Add'} aria-label={usedBy?.length ? 'Edit people' : 'Add people'} onClick={onPeople} />
-        </HStack>
-        {usedBy?.length
-          ? (
-            <HStack gap={2} vAlign="center">
-              <Initials people={usedBy} />
-              <Text as="p" color="secondary">{peopleLabel(usedBy.length)} · {andList(usedBy.map(p => p.name))}</Text>
-            </HStack>
-          )
-          : <Text as="p" color="secondary">Add who shares this Space.</Text>}
-      </VStack>
-
       {inSpace.length > 0 && (
         <>
           <Divider />
           {/* Decisions */}
           <VStack gap={3}>
-            <VStack gap={1}>
-              <Heading level={2}>Decisions</Heading>
-              <Text as="p" color="secondary">{progressLine(decided)}</Text>
-            </VStack>
-            <Button label={declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'} variant="primary" onClick={onDeclutter} />
-            {voteCard}
-            {hasSelling && (
+            {/* While some are left: how far along, and decluttering is the main button. All decided: when, and a grey Declutter again. */}
+            <VStack gap={2}>
               <HStack gap={2} vAlign="center" hAlign="between">
-                <Text as="p">For sale and letting go</Text>
-                <Button label="See list" onClick={onSelling} />
+                <Heading level={2}>Decisions</Heading>
+                {!allDecided && <Text color="secondary">{decided.decided} of {decided.total}</Text>}
               </HStack>
-            )}
+              {allDecided
+                ? <Text as="p" color="secondary">{decidedOn ? `Decluttered on ${shortDay(decidedOn)}` : `All ${decided.total} decided`}{decided.selling > 0 && <> · {saleLine(decided)}</>}</Text>
+                : <ProgressBar label="Things decided" isLabelHidden value={decided.decided} max={decided.total} />}
+              {!allDecided && decided.selling > 0 && <Text as="p" type="supporting" color="secondary">{saleLine(decided)}</Text>}
+            </VStack>
+            <Button
+              label={allDecided ? 'Declutter again' : declutterLeft ? `Resume decluttering · ${declutterLeft} left` : 'Declutter this Space'}
+              variant={allDecided ? undefined : 'primary'}
+              onClick={onDeclutter}
+            />
+            {voteCard(sellOrGo > 0 && <Button label={`Sell & let go (${sellOrGo})`} className="grow" onClick={onSelling} />)}
           </VStack>
         </>
       )}
 
       <Divider />
-      {/* Muse */}
+      {/* Tasks: chores on this Space, some for its Things. Muse can suggest them from what the scan found.
+          The last section, so always open; only finished one-time tasks fold away under Done. */}
       <VStack gap={2}>
-        <Heading level={2}>Muse</Heading>
-        <Switch
-          label="Share with Muse"
-          description={space.shared
-            ? `On. Muse can see this Space's ${countLabel(inSpace.length, 'thing')}.`
-            : "Off. Muse can't see this Space."}
-          value={Boolean(space.shared)}
-          isDisabled={sharing}
-          onChange={on => (on ? setAskShare(true) : toggleShare(false))}
-        />
-        {(shareProblem || shareError) && <Text as="p" role="alert" color="secondary">{shareProblem || `Muse may see an older list: ${shareError}`}</Text>}
+        <HStack gap={2} vAlign="center" hAlign="between">
+          <Heading level={2}>{tasks.open.length ? `Tasks (${tasks.open.length})` : 'Tasks'}</Heading>
+          <Button label="Add" aria-label="Add a task" onClick={() => onOpenTask(null)} />
+        </HStack>
+        {tasks.open.length > 0
+          ? <TaskList tasks={tasks.open} people={people} itemsOf={() => items} onChange={onTaskChange} onOpen={task => onOpenTask(task.id)} />
+          : <Text as="p" color="secondary">{tasks.done.length ? 'All done.' : 'Chores for this Space, like watering the plants.'}</Text>}
+        {tasks.done.length > 0 && section(TASKS_DONE, `Done (${tasks.done.length})`, (
+          <TaskList tasks={tasks.done} people={people} itemsOf={() => items} onChange={onTaskChange} onOpen={task => onOpenTask(task.id)} />
+        ), 3)}
+        {/* Grey, so Declutter stays the one main button on the page. */}
+        {inSpace.length > 0 && <Button label="Suggest tasks with Muse" onClick={() => setSuggesting(true)} />}
       </VStack>
+
+      {suggesting && (
+        <TaskSuggest
+          space={space}
+          things={inSpace}
+          people={usedBy?.length ? usedBy : people}
+          existing={space.tasks ?? []}
+          onAdd={onAddTask}
+          onClose={() => setSuggesting(false)}
+        />
+      )}
       {addingItem && <ItemForm spaceName={spaceName} onClose={() => setAddingItem(false)} onSave={fields => { setAddingItem(false); onAddItem(fields) }} />}
       {dialogs}
     </VStack>
@@ -453,7 +483,8 @@ function progressText(progress, photos) {
 
 // Each decision gets its own tag, so it stands apart from the item's name. Keep is grey: nothing left to do.
 // Let go is red like Delete; Sell is gold and carries its price.
-const DECISION_COLORS = { keep: 'neutral', sell: 'yellow', donate: 'red' }
+// Green is money (Sell, and what's for sale is worth); yellow stays for tasks due soon.
+const DECISION_COLORS = { keep: 'neutral', sell: 'green', donate: 'red' }
 
 // A Sell item's price: the asking price once the person sets one, otherwise Muse's estimate, labelled as such.
 function price(item) {
@@ -465,7 +496,16 @@ function price(item) {
 
 const andList = names => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0])
 
-function progressLine({ decided, total, selling, value }) {
-  const sale = selling ? ` · ${selling} to sell${value ? `, about $${value}` : ''}` : ''
-  return `${decided} of ${total} decided${sale}`
+const latest = days => days.filter(Boolean).sort().pop() ?? null
+const shortDay = iso => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+
+/** "3 to sell, about $450", with the amount in a green pill, the colour of money in the app. */
+function saleLine({ selling, value }) {
+  return <>{selling} to sell{value > 0 && <>, about <Badge label={`$${value}`} variant="green" className="money" /></>}</>
+}
+
+// A description worth showing says more than the name: "a brown leather sofa" under "brown leather sofa" doesn't.
+const plain = text => String(text ?? '').toLowerCase().replace(/^(a|an|the)\s+/, '').replace(/[.\s]+$/, '').trim()
+function saysMore(item) {
+  return Boolean(item.description) && plain(item.description) !== plain(item.name)
 }

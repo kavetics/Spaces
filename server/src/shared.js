@@ -1,10 +1,11 @@
-// Spaces their owner shared with Muse, kept in Supabase as names and item lists. Room photos never come
+// Spaces their owner shared with Muse, kept in Supabase as names, item lists and tasks. Room photos never come
 // here; items marked Sell may carry up to 3 small sale photos, for listing them on Marketplace.
 // Without accounts, only someone with the owner key can share, change or unshare a Space.
 import { timingSafeEqual } from 'node:crypto';
 import express from 'express';
 
 const MAX_ITEMS = 500;
+const MAX_TASKS = 100;
 const MAX_PHOTOS = 3; // per item marked Sell
 const MAX_PHOTO = 150_000; // characters of a data URL, about 110 KB of JPEG
 const text = (value, max = 200) => String(value ?? '').slice(0, max);
@@ -31,6 +32,8 @@ export async function supabase(path, { method = 'GET', body, prefer } = {}) {
     console.error(`Supabase ${method} ${path}: ${res.status} ${detail}`);
     // A table that was never created is a setup step on the server, not a passing outage.
     if (detail.includes('PGRST205')) throw Object.assign(new Error("This isn't set up on the server yet: its storage tables are missing."), { status: 503 });
+    // A column added after the table was made (tasks) may not be there yet; callers can do without it.
+    if (detail.includes('PGRST204') || detail.includes('42703')) throw Object.assign(new Error('A storage column is missing.'), { status: 502, missingColumn: true });
     throw Object.assign(new Error("Couldn't reach shared storage. Try again later."), { status: 502 });
   }
   // Writes asked to return nothing come back with an empty body.
@@ -38,8 +41,31 @@ export async function supabase(path, { method = 'GET', body, prefer } = {}) {
   return reply ? JSON.parse(reply) : null;
 }
 
-/** Every shared Space, for the Muse connector. */
-export const listShared = () => supabase('shared_spaces?select=id,name,scanned_at,items&order=shared_at');
+/** Every shared Space, for the Muse connector. Before the tasks column is added, Spaces come without tasks. */
+export async function listShared() {
+  try {
+    return await supabase('shared_spaces?select=id,name,scanned_at,items,tasks&order=shared_at');
+  } catch (err) {
+    if (!err.missingColumn) throw err;
+    return (await supabase('shared_spaces?select=id,name,scanned_at,items&order=shared_at')).map(s => ({ ...s, tasks: [] }));
+  }
+}
+
+const REPEATS = ['once', 'weekly', '2weeks', 'monthly'];
+const isDay = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** A Space's tasks: what, how often, when it's due, who does it and which Things, as plain text. */
+export function cleanTasks(tasks) {
+  if (!Array.isArray(tasks)) return [];
+  return tasks.slice(0, MAX_TASKS).map(t => ({
+    name: text(t.name, 60),
+    repeat: REPEATS.includes(t.repeat) ? t.repeat : 'once',
+    due: isDay(t.due) ? t.due : null,
+    done: Boolean(t.done),
+    who: text(t.who, 40) || null,
+    things: (Array.isArray(t.things) ? t.things : []).slice(0, 50).map(n => text(n)).filter(Boolean),
+  })).filter(t => t.name && t.due);
+}
 
 /** Keeps only the fields Muse needs, as text with sane lengths, whatever the phone sent. */
 export function cleanItems(items) {
@@ -105,8 +131,16 @@ shared.put('/:id', express.json({ limit: '6mb' }), async (req, res, next) => {
   try {
     const scanned = new Date(req.body?.scannedAt);
     if (Number.isNaN(scanned.getTime())) throw Object.assign(new Error('Send when it was scanned.'), { status: 400 });
-    const row = { id: spaceId(req.params.id), name: text(req.body.name, 60) || 'Space', scanned_at: scanned.toISOString(), items: cleanItems(req.body.items), updated_at: new Date().toISOString() };
-    await supabase('shared_spaces?on_conflict=id', { method: 'POST', body: row, prefer: 'resolution=merge-duplicates,return=minimal' });
+    const row = { id: spaceId(req.params.id), name: text(req.body.name, 60) || 'Space', scanned_at: scanned.toISOString(), items: cleanItems(req.body.items), tasks: cleanTasks(req.body.tasks), updated_at: new Date().toISOString() };
+    const save = body => supabase('shared_spaces?on_conflict=id', { method: 'POST', body, prefer: 'resolution=merge-duplicates,return=minimal' });
+    try {
+      await save(row);
+    } catch (err) {
+      // Until the tasks column is added (server/sql/shared_spaces.sql), the Space is shared without its tasks.
+      if (!err.missingColumn) throw err;
+      const { tasks: _, ...withoutTasks } = row;
+      await save(withoutTasks);
+    }
     res.json({ shared: true, items: row.items.length });
   } catch (err) { next(err); }
 });
