@@ -444,5 +444,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Measured:** 45 of 57 things found (79%): living room 25 of 33, foyer 12 of 15, parlor 8 of 9. 3 found but filed as nearby, 3 with the wrong count. About 3 minutes a room; the one Muse merge call is 60 to 66% of it. No failed photos or outlines.
 - **Learned:** misses are small things on surfaces (TV stand clutter, a tiny bust), wall fixtures (sconces, a blinds remote), and things hung on a coat rack. Found-nearby items count as found; the owner decided wrong area isn't a miss.
 - **Next:** speed up the merge step; video script; README for judges.
+
+## 2026-11-03: Welcome screen
+- **Done:** the caption is now "Your home, understood by Muse." over "Scan a room. Decide together. Keep up with the chores." (it left out Tasks before, and matches the README and the video's ending). The breathing is more dramatic: the gold glow swells from almost off to full and grows a third, while the tunnel brightens and leans toward the light, every 5 s.
+- **Decisions:** picked from four options shown side by side on the real art. The pulse uses `scale` and `filter`, so it plays on top of the slow drift; it starts dim, so the first breath is the fade-in. Reduced motion still turns it off.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.

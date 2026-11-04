@@ -54,7 +54,11 @@ export default function Welcome({ loadScanner, onAccept }) {
         <VStack gap={6} hAlign="center">
           <VStack gap={3} hAlign="center" className="welcome-title" onAnimationEnd={() => setShowButton(true)}>
             <Heading level={1} type="display-1" justify="center" className="welcome-name">SPACES</Heading>
-            <Text as="p" type="large" color="secondary" justify="center">Scan a room. Spaces learns your things, the people who share them and what you've decided, and Muse can use it.</Text>
+            {/* What it is, then how, in three short steps. */}
+            <VStack gap={1} hAlign="center">
+              <Text as="p" type="large" justify="center">Your home, understood by Muse.</Text>
+              <Text as="p" color="secondary" justify="center">Scan a room. Decide together. Keep up with the chores.</Text>
+            </VStack>
           </VStack>
           {showButton && (
             <Center className="welcome-button">

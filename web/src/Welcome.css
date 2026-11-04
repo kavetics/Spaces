@@ -20,7 +20,8 @@
   transform-origin: 70% 24%;
   animation:
     welcome-fade 1000ms var(--ease-standard) both,
-    welcome-drift 24s ease-in-out infinite alternate;
+    welcome-drift 24s ease-in-out infinite alternate,
+    welcome-tunnel 5s ease-in-out infinite;
 }
 
 /* The floor falls off to the page color, so the words sit on near-black. */
@@ -37,27 +38,34 @@
   );
 }
 
-/* The light breathes: a soft glow of the same gold as the main buttons. */
+/* The light breathes: a glow of the same gold as the main buttons swells from almost off to full and grows,
+   while the tunnel brightens and leans toward it, every 5 s. */
 .welcome::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse 34% 20% at 70% 24%, color-mix(in srgb, var(--color-accent) 40%, transparent), transparent 72%);
-  animation: welcome-fade 1000ms var(--ease-standard) both, welcome-breathe 6s ease-in-out 1000ms infinite;
+  transform-origin: 70% 24%;
+  background: radial-gradient(ellipse 34% 20% at 70% 24%, color-mix(in srgb, var(--color-accent) 80%, transparent), transparent 72%);
+  /* Starts dim, so the first breath in is also the fade-in. */
+  animation: welcome-breathe 5s ease-in-out infinite;
 }
 
 .welcome-name { letter-spacing: 0.3em; padding-inline-start: 0.3em; }
 .welcome-credit { opacity: 0.7; }
 .welcome-title { animation: welcome-rise 800ms var(--ease-standard) 600ms both; }
+/* Short caption lines break evenly, not with one word left on its own line. */
+.welcome-title p { text-wrap: balance; }
 .welcome-button { animation: welcome-pop var(--duration-medium) var(--ease-standard) both; }
 
 @keyframes welcome-fade { from { opacity: 0; } }
 @keyframes welcome-rise { from { opacity: 0; transform: translateY(var(--spacing-6)); } }
 @keyframes welcome-pop { from { opacity: 0; transform: scale(0.9); } }
 @keyframes welcome-drift { to { transform: scale(1.06); } }
-@keyframes welcome-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes welcome-breathe { 0%, 100% { opacity: 0.12; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+/* Uses scale and filter, not transform, so it plays on top of the slow drift. */
+@keyframes welcome-tunnel { 0%, 100% { filter: brightness(0.9); scale: 1; } 50% { filter: brightness(1.2); scale: 1.05; } }
 
 /* Near zero, not none: the button waits for the title's animation to end. */
 @media (prefers-reduced-motion: reduce) {
