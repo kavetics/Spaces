@@ -456,5 +456,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-04: For judges
 - **Done:** a "For judges" box at the top of the README (what it is, the live app, how to try it on a phone or a laptop, where each Meta model is in the code, what can't be tried). The design doc and the Meta Model API feedback report are now in the repo as `docs/DESIGN.md` and `docs/PARTNER_FEEDBACK.md`, with a Mermaid architecture diagram.
 - **Decisions:** the feedback report's "still to add" checklist (onboarding, docs, support, Muse Code) stays out of the repo until the owner fills it in. Same numbers everywhere: 45 of 57, about 3 minutes a room, 8 photos.
+
+## 2026-11-04: The dock waits for sharing
+- **Done:** until a Space is shared with Muse, the dock on My home is locked: its starters and bar are faded and can't be tapped, with one line above them, "Share a Space with Muse to ask about your home." Sharing a Space turns it gold and working.
+- **Why:** Muse only sees what people share, and the locked dock makes that opt-in visible, in the app and in the demo.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.

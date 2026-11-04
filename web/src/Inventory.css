@@ -87,7 +87,7 @@ button.muse-pill.muse-pill[aria-pressed="true"] { border-color: var(--color-text
   padding: var(--spacing-3) var(--spacing-4) calc(var(--spacing-4) + env(safe-area-inset-bottom));
   background: var(--color-background-body); border-block-start: 1px solid var(--color-border-emphasized);
 }
-.inventory:has(.muse-dock) { padding-block-end: 9.5rem; }
+.inventory:has(.muse-dock) { padding-block-end: 11rem; }
 button.dock-chip.dock-chip { border: 1px solid var(--color-border-emphasized); border-radius: var(--radius-full); background-color: transparent; }
 /* Looks like a text box with a gold edge; it opens Ask Muse. */
 button.dock-bar.dock-bar { width: 100%; justify-content: space-between; border: 1px solid var(--color-text-accent); border-radius: var(--radius-full); background-color: transparent; color: var(--color-text-secondary); padding-inline-start: var(--spacing-4); padding-inline-end: var(--spacing-1); }
@@ -98,3 +98,8 @@ button.dock-bar.dock-bar { width: 100%; justify-content: space-between; border: 
 
 /* A dollar amount in a grey line (what's for sale is worth): a green pill that sits on the text's line. */
 .money { vertical-align: middle; font-weight: 600; }
+/* Before anything is shared the dock is locked: grey edges, no gold, and the browser's disabled look. */
+button.dock-bar.dock-bar:disabled, button.dock-bar.dock-bar[aria-disabled="true"] { border-color: var(--color-border-emphasized); }
+button.dock-bar:disabled .dock-send, button.dock-bar[aria-disabled="true"] .dock-send { background: var(--color-border-emphasized); }
+/* Locked: the starters and the bar fade back; the hint line above them stays readable. */
+.dock-locked > :not(p) { opacity: 0.45; }

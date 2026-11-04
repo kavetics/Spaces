@@ -144,15 +144,17 @@ export default function SpacesPage({ spaces, failed, processing, onOpen, onScanA
       {/* Muse, always in reach at the bottom of My home. The bar only looks like a text box: it opens Ask Muse,
           where typing works well on iPhone; a fixed box here would misplace the cursor. A starter asks at once. */}
       {ready.length > 0 && (
-        <VStack gap={2} className="muse-dock" role="region" aria-label="Ask Muse">
-          {shared.length > 0 && (
-            <HStack gap={2}>
-              {DOCK_STARTERS.map(q => <Button key={q} label={q} size="sm" className="dock-chip" onClick={() => onAsk({ ask: q })} />)}
-            </HStack>
-          )}
+        <VStack gap={2} className={shared.length ? 'muse-dock' : 'muse-dock dock-locked'} role="region" aria-label="Ask Muse">
+          {/* Until a Space is shared, Muse has nothing to see: the dock shows greyed out and can't be tapped,
+              and one line says how to turn it on. Sharing is opt-in, per Space. */}
+          {shared.length === 0 && <Text as="p" type="supporting" color="secondary">Share a Space with Muse to ask about your home.</Text>}
+          <HStack gap={2}>
+            {DOCK_STARTERS.map(q => <Button key={q} label={q} size="sm" className="dock-chip" isDisabled={!shared.length} onClick={() => onAsk({ ask: q })} />)}
+          </HStack>
           <Button
-            label={shared.length ? 'Ask Muse about your home' : 'Share a Space to ask Muse'}
+            label="Ask Muse about your home"
             className="dock-bar"
+            isDisabled={!shared.length}
             onClick={() => onAsk({ focus: true })}
             endContent={<span className="dock-send"><Icon icon="arrowUp" size="sm" /></span>}
           />
