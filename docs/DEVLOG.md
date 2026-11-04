@@ -452,5 +452,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-04: Repo cleanup for judges
 - **Done:** replaced the old party-game roadmap and to-do list with Spaces ones, deleted the Vite template README, brought `CLAUDE.md` up to date (Decide, Tasks and Share with Muse are built, not planned), and fixed a stale CSS comment. Every code file and CSS class is still in use; no unused variables, TODOs or stray logging.
 - **Kept:** this dev log's game history, as the record of how the project got here.
+
+## 2026-11-04: For judges
+- **Done:** a "For judges" box at the top of the README (what it is, the live app, how to try it on a phone or a laptop, where each Meta model is in the code, what can't be tried). The design doc and the Meta Model API feedback report are now in the repo as `docs/DESIGN.md` and `docs/PARTNER_FEEDBACK.md`, with a Mermaid architecture diagram.
+- **Decisions:** the feedback report's "still to add" checklist (onboarding, docs, support, Muse Code) stays out of the repo until the owner fills it in. Same numbers everywhere: 45 of 57, about 3 minutes a room, 8 photos.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.

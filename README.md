@@ -6,10 +6,28 @@ Meta AI app knows your home the way you do.
 
 Built solo for the Meta Global AI Developer Hackathon · Indie Developer Track · Build for Your World.
 
-- **Live app:** https://room-rush-0ivl.onrender.com (works best on an iPhone)
-- **Demo video:** link coming with the submission (3 minutes)
-- The live app's address still says `room-rush`, from an earlier idea. The last version of that game is at the git tag
-  `room-rush-games`.
+> ### For judges
+>
+> **In 30 seconds:** Spaces turns 8 phone photos of a room into a home inventory with `muse-spark-1.3` and `sam-3.1`,
+> then lets people decide what to keep, ask family to vote, and track chores. Shared Spaces become context for Muse in
+> the Meta AI app, which can then, for example, draft a Marketplace listing for a sofa marked Sell. On 3 real rooms it
+> found 45 of 57 things, in about 3 minutes a room.
+>
+> - **Demo video (3 min):** link coming with the submission
+> - **Live app:** https://room-rush-0ivl.onrender.com (the address still says `room-rush`, from an earlier idea)
+> - **Try it in 2 minutes:** on a phone, tap Scan your first Space and turn through 8 photos. On a laptop, tap
+>   "Upload a photo instead" on the camera screen, then add more photos from the Space page. Then tap a category,
+>   tap an item to see it outlined in its photo, tap Share with Muse, and ask Muse from the bar on My home.
+> - **Where Meta's models are:** scan to inventory in [server/src/inventory.js](server/src/inventory.js), Ask Muse in
+>   [server/src/ask.js](server/src/ask.js), task suggestions in [server/src/tasks.js](server/src/tasks.js), the API
+>   client in [server/src/meta.js](server/src/meta.js), and the Meta AI app connector in
+>   [server/src/connector.js](server/src/connector.js).
+> - **More depth:** [design doc](docs/DESIGN.md) · [measured accuracy](docs/ACCURACY.md) ·
+>   [Meta Model API feedback](docs/PARTNER_FEEDBACK.md)
+> - **Can't be tried here:** the Meta AI app connector serves only the owner's household, so it's shown in the video.
+>   Saving scan photos happens only on the development server.
+
+The last version of the earlier party game is at the git tag `room-rush-games`.
 
 ## Why I built it
 
