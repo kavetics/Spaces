@@ -34,6 +34,9 @@ function withHandItems(result, handItems) {
   return { ...result, items: [...result.items, ...handItems.map((i, n) => ({ ...i, id: firstId + n }))] }
 }
 
+// Added photos are recognized one scan's worth at a time; the server takes up to 10 photos a request.
+const ADD_BATCH = 8
+
 export default function App() {
   const [screen, setScreen] = useState(null) // null while loading, then home → pick → scan → space ⇄ spaces
   const [askOpening, setAskOpening] = useState(null) // a starter from the dock on My home, or focus the box
@@ -109,9 +112,12 @@ export default function App() {
   /**
    * Recognizes added photos, makes the new items' pictures, and asks which may already be listed.
    * New items keep their own ids and point at their own photos, after the Space's existing ones.
+   * Photos go one scan's worth at a time (the server takes up to 10 a request); the rest wait for the next run,
+   * which then also checks them for repeats against what this batch found.
    */
   async function addToSpace(space) {
-    const added = await buildInventory(space.addFrames, space.spaceName, setProgress)
+    const batch = space.addFrames.slice(0, ADD_BATCH)
+    const added = await buildInventory(batch, space.spaceName, setProgress)
     const firstPhoto = space.frames.length
     const firstId = Math.max(-1, ...space.result.items.map(i => i.id)) + 1
     const items = added.items.map(i => ({
@@ -121,7 +127,7 @@ export default function App() {
       view: i.view && { ...i.view, photo: i.view.photo + firstPhoto },
       addedAt: new Date().toISOString(),
     }))
-    const frames = [...space.frames, ...space.addFrames]
+    const frames = [...space.frames, ...batch]
     const { pictures } = await makePictures({ frames, result: { items } })
     const withPictures = items.map(i => ({ ...i, picture: pictures[i.id] ?? '' }))
     const { inSpace, nearby } = sortItems(space)
@@ -131,9 +137,11 @@ export default function App() {
       .catch(() => ({ repeats: {} }))
     change(space.id, s => {
       if (s.savedAt !== space.savedAt) return s
-      const { addFrames: _, ...rest } = s
+      const { addFrames = [], ...rest } = s
+      const waiting = addFrames.slice(batch.length)
       return {
         ...rest,
+        ...(waiting.length && { addFrames: waiting }),
         frames,
         result: {
           ...s.result,

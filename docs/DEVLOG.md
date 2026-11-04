@@ -460,5 +460,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-04: The dock waits for sharing
 - **Done:** until a Space is shared with Muse, the dock on My home is locked: its starters and bar are faded and can't be tapped, with one line above them, "Share a Space with Muse to ask about your home." Sharing a Space turns it gold and working.
 - **Why:** Muse only sees what people share, and the locked dock makes that opt-in visible, in the app and in the demo.
+
+## 2026-11-04: Fixed "Unexpected file field" when adding to a Space
+- **Found:** a second backyard scan failed with "Couldn't add your new photos: Unexpected file field". Added photos queue on the Space and were all sent in one request, but the server takes at most 10 photos a request, so a scan added on top of earlier waiting photos was refused.
+- **Fixed:** added photos go one scan's worth (8) at a time; the rest wait for the next run, which also checks them for repeats against the batch before. Tested with 16 photos added at once: requests of 8 and 8, all 17 photos kept, repeats flagged across batches.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.
