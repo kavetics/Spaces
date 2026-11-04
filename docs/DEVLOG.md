@@ -448,5 +448,9 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 ## 2026-11-03: Welcome screen
 - **Done:** the caption is now "Your home, understood by Muse." over "Scan a room. Decide together. Keep up with the chores." (it left out Tasks before, and matches the README and the video's ending). The breathing is more dramatic: the gold glow swells from almost off to full and grows a third, while the tunnel brightens and leans toward the light, every 5 s.
 - **Decisions:** picked from four options shown side by side on the real art. The pulse uses `scale` and `filter`, so it plays on top of the slow drift; it starts dim, so the first breath is the fade-in. Reduced motion still turns it off.
+
+## 2026-11-04: Repo cleanup for judges
+- **Done:** replaced the old party-game roadmap and to-do list with Spaces ones, deleted the Vite template README, brought `CLAUDE.md` up to date (Decide, Tasks and Share with Muse are built, not planned), and fixed a stale CSS comment. Every code file and CSS class is still in use; no unused variables, TODOs or stray logging.
+- **Kept:** this dev log's game history, as the record of how the project got here.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.

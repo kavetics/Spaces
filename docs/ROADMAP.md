@@ -1,38 +1,20 @@
-# Room Rush: Roadmap
+# Spaces: Roadmap
 
-Things Room Rush could do beyond the hackathon demo. These are **not built**; they're kept here so the pitch and future work stay honest about what exists today.
+What Spaces could do after the hackathon. None of this is built yet; it's kept here so the pitch stays honest about
+what exists today. The earlier party game's roadmap is at the git tag `room-rush-games`.
 
-## Who it's for
-Room Rush brings people together with just a phone, wherever they are.
-- **Friends and strangers at parties.** Where this started, and where it has been tested.
-- **Grandparents and grandkids.** Family visits where everyone can play, with family supervising.
-- **Seniors in care communities (future application).** Group activity time, using the seated modes. To be shaped with activities directors first. No health claims.
-- **Schools and childcare (much later, if at all).** Only after child-safety, privacy and legal review. Nothing is built or filmed for children today.
+## Recognition
+- **Faster scans.** The one Muse call that merges repeats across photos is 60 to 66% of every scan. Split it by area
+  or photo pair, or stream partial results, so a scan isn't two minutes of waiting.
+- **Irregular Spaces.** Spatial mapping with Apple's RoomPlan in a native app, or by matching items between scans,
+  so a long yard or an L-shaped room is covered without guesswork.
+- **Measure more homes,** several runs each, before quoting an accuracy rate.
 
-## Games
-- **Community library.** Players save and share favorite games; popular AI experiments graduate into the classics. Needs accounts, ranking, and **moderation before launch** (user-submitted challenges are a known safety risk).
-- **⭐ Save this game.** A first step toward the library: save a game you liked to replay later.
-- **More classics.** Grow the curated library beyond the first four, each with its own tested referee check.
-- **Themed packs.** Halloween, birthdays, office icebreakers, family reunions, kids' parties.
+## Context for Muse
+- **Plant care from the scan.** Muse names the plants it found and suggests how often to water each, as tasks.
+- **Memories on Things.** The stories behind what's kept, as more context for Muse.
+- **Correcting items** in place, so a wrong name or count is fixed once and stays fixed.
 
-## Plan ahead
-- **Party plan mode.** Planning a backyard BBQ (or any gathering)? Snap the space days ahead. Room Rush suggests games that fit it, lists the props each game needs, and finds them to buy or rent nearby on **Facebook Marketplace**. Builds on today's read-the-room report and prop checks. Depends on Marketplace search access, which has no public API today, so it would need a Meta partnership or a Muse connector.
-
-## Play together
-- **Multiple phones.** Friends join from their own phones with a link; scores and turns stay in sync.
-- **Room Rush inside group chats.** "Hey Muse, this party's dead" in WhatsApp, Messenger or Instagram, with the game running right there.
-- **Hands-free on Ray-Ban Meta glasses.** The host films from their glasses; the referee judges what they see.
-
-## Capture and share
-- **Highlight reel export.** Stitch round clips, show graphics and captions into one shareable video for Instagram Reels and X.
-- **In-app camera locked to the 1× lens.** Avoids ultra-wide distortion when reading the room. Needs a secure (https) link.
-- **All-in-one game camera.** One in-app screen that records the round, plays the music, and tracks everyone's movement live, all at once. The app controls the music, so it knows the exact moment it stops; the referee can show a live movement meter and call players out in real time instead of after the round. Replaces today's flow, where the iPhone camera takes over the screen and the referee has to detect the freeze afterwards.
-
-## Commerce and partners
-- **Order props through Muse connectors.** "No ball? Get one delivered" via Instacart or Walmart.
-- **Sponsored challenges.** Brand-themed games, clearly labeled as sponsored.
-
-## Accessibility
-- **Rules read out loud** so nobody has to stare at a screen.
-- **Voice-note setup** (Muse Voice Transcribe): the host says how many people are playing instead of tapping.
-- **Seated-first game modes** for groups with limited mobility.
+## Households
+- **Accounts and sync,** so a household shares one home across phones, with Supabase holding shared Spaces.
+- **Votes and tasks across phones,** so family members see and tick off their own tasks.

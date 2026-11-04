@@ -8,8 +8,8 @@ Built solo for the Meta Global AI Developer Hackathon Â· Indie Developer Track Â
 
 - **Live app:** https://room-rush-0ivl.onrender.com (works best on an iPhone)
 - **Demo video:** link coming with the submission (3 minutes)
-- The repo and service are still called `room-rush`, from an earlier idea. The last version of that game is at the git
-  tag `room-rush-games`.
+- The live app's address still says `room-rush`, from an earlier idea. The last version of that game is at the git tag
+  `room-rush-games`.
 
 ## Why I built it
 

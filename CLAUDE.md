@@ -4,23 +4,28 @@ Your home, understood by Muse. Scan a room with your phone, and Spaces builds an
 
 Built solo for the Meta Global AI Developer Hackathon (Indie track, "Build for Your World"). **Submission deadline: Wed Nov 4, 2026, 6:00 PM CST** (hard deadline 8:00 PM CST).
 
-The repo and hosted service are still named `room-rush`, from an earlier idea. The last version of that party game is at the git tag `room-rush-games`.
+The hosted service is still named `room-rush` (https://room-rush-0ivl.onrender.com), from an earlier idea. The last version of that party game is at the git tag `room-rush-games`.
 
 ## What it does
 1. **Name a Space:** living room, backyard, or anything else.
 2. **Scan:** 8 guided photos taken automatically when the phone is lined up and still.
 3. **Build the inventory:** Muse Spark names the items in each photo, SAM 3.1 outlines them, and Muse Spark merges repeats across photos. Plain code checks merges, counts quantities and picks each item's crop.
 4. **Sort it:** items go into 8 categories. Things outside the Space go under "Also spotted nearby". People add or remove items.
-5. **Ask Muse:** chat about all your Spaces at once. Answers cite items, and a citation opens the scan photo with the item outlined.
+5. **Decide:** Keep, Sell or Let go, one by one or with a family vote link. For Sell, Muse estimates condition and value and drafts a listing.
+6. **Tasks:** chores on a Space and its Things; Muse suggests them, plain code sets the dates.
+7. **Ask Muse:** chat about all your Spaces at once. Answers cite items, and a citation opens the scan photo with the item outlined.
+8. **Share with Muse:** a shared Space is readable by Muse in the Meta AI app through a read-only connector.
 
-Planned: sell listings, memories on items, correcting items, shared voting, and a connection to the Muse app. See `docs/TODO.md`.
+Next: see `docs/ROADMAP.md`; what's left is in `docs/TODO.md`.
 
 ## Code map
 - `server/src/inventory.js`: scan to inventory
 - `server/src/ask.js`: Ask Muse answers and citation checks
+- `server/src/tasks.js`: Muse task suggestions
+- `server/src/connector.js`: read-only connector for Muse in the Meta AI app
 - `server/src/meta.js`: Meta Model API client
 - `web/src/App.jsx`: screens and the recognition run
-- `web/src/spaceGraph.js`: links Space, area, category, item and photo; Ask Muse's context
+- `web/src/spaceGraph.js`: links Space, area, category, item, photo and task; Ask Muse's context
 - `web/src/savedSpaces.js`: Spaces and chats on the phone (IndexedDB)
 - `server/scripts/test-inventory.js`: run recognition on saved photos, with `npm run test:inventory`
 

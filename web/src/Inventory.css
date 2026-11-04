@@ -20,7 +20,7 @@
 .guide-spot { fill: var(--color-accent); }
 .guide-turn { fill: none; stroke: var(--color-accent); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .guide-label { fill: var(--color-text-primary); font-size: 12px; }
-/* "Add an item" on the Digital inventory heading's row, just right of its dropdown chevron. */
+/* A button on a dropdown heading's row, outside its trigger, just right of the chevron (Scan a Space on My home). */
 .inventory-with-action { position: relative; }
 .inventory-action { position: absolute; inset-block-start: calc(var(--spacing-1) * -1); inset-inline-end: 0; z-index: 1; }
 .inventory-action-trigger > button[aria-expanded] { padding-inline-end: calc(var(--inventory-action-width, 4rem) + var(--spacing-2)); }
