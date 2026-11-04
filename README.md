@@ -13,7 +13,7 @@ Built solo for the Meta Global AI Developer Hackathon Â· Indie Developer Track Â
 > the Meta AI app, which can then, for example, draft a Marketplace listing for a sofa marked Sell. On 3 real rooms it
 > found 45 of 57 things, in about 3 minutes a room.
 >
-> - **Demo video (3 min):** link coming with the submission
+> - **Demo video (3 min):** https://youtu.be/mR-L1qUUaLk
 > - **Live app:** https://room-rush-0ivl.onrender.com (the address still says `room-rush`, from an earlier idea)
 > - **Try it in 2 minutes:** on a phone, tap Scan your first Space and turn through 8 photos. On a laptop, tap
 >   "Upload a photo instead" on the camera screen, then add more photos from the Space page. Then tap a category,

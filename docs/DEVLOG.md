@@ -466,3 +466,8 @@ Owner's direction, personal to them: Room Rush for group activity time in senior
 - **Fixed:** added photos go one scan's worth (8) at a time; the rest wait for the next run, which also checks them for repeats against the batch before. Tested with 16 photos added at once: requests of 8 and 8, all 17 photos kept, repeats flagged across batches.
 - **Tests:** older suites now open a category chip before looking for an item (`chips.mjs` in the scratchpad). The sell and listing suites' Ask Muse steps still fail: they predate the rule that a Space must be shared before Muse sees it.
 - **Setup:** Supabase needs a `tasks` column (`server/sql/shared_spaces.sql`). Until it's added, shared Spaces still save, without their tasks.
+
+## 2026-11-04: Demo video
+- **Done:** the 2:55 demo video, cut to the owner's voice-over: the problem, scanning the parlor, a family vote, three backyard scans, Muse's chores, sharing, then Muse in the Meta AI app setting reminders and drafting a Marketplace listing. Ends on the welcome screen's art and words. On YouTube: https://youtu.be/mR-L1qUUaLk, linked in the README.
+- **Decisions:** real use only; every sped-up clip says so. Muse writing back to Spaces is shown as "not built yet". Contacts, messages, other people's listings and Control Center were cut or blurred.
+- **Learned:** Muse in the Meta AI app only saw new connector endpoints (tasks) after its connector description was refreshed there.
