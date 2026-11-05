@@ -41,6 +41,13 @@ Every call goes through the OpenAI-compatible endpoint from a Node server. Spark
 | 6 | SAM prompt wording matters | "stairs" scored 0.55 on a clear staircase; "staircase" scored 0.70. | Hard to tune without a guide to the words SAM expects. | Let Spark choose the prompt word. |
 | 7 | Results vary between runs | The same 8 photos gave somewhat different item lists on reruns. | Accuracy has to be measured over several runs to be trusted. | None yet; doubtful items are kept and marked "Not sure". |
 
+## Getting started and support
+
+- **Onboarding was simple.** Getting a key and making the first call was straightforward, and the documentation was thorough.
+- **The per-model capabilities section was the most useful part of the docs.** It made it quick to pick Muse Spark for judgment and SAM 3.1 for outlines.
+- **Support wasn't needed.** No blocking issues came up during development. The one problem, the 404 from the hosted server (friction #2), cleared up before the support ticket was answered.
+- **Muse in the Meta AI app helped build Spaces, not just run it.** Muse Code wasn't used, but the Muse app was used throughout: market research before building, questions about the Meta ecosystem and Facebook Marketplace, theme ideas for the app's look, and, working alongside Claude, debugging the setup of the Spaces connector. Its answers were accurate and reliable.
+
 ## Measured
 
 On 3 real rooms in one home, the pipeline found 45 of the 57 things the owner listed by hand (79%). It's one scan per room and one person's list, so it shows behaviour, not a general rate. Method and details: [ACCURACY.md](ACCURACY.md).
